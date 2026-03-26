@@ -1,5 +1,5 @@
 /**
- * Agent Builder Tools — The 9 tools used by the Agent Builder Agent
+ * Agent Builder Tools — The 10 tools used by the Agent Builder Agent
  *
  * @purpose Public API for Agent Builder tool implementations
  */
@@ -95,6 +95,18 @@ export type {
   DeploymentArtifact,
   ExecFn,
 } from "./deploy_agent.js";
+
+// C.1.10 — Generate Tool Implementations
+export { GenerateToolImplementationsTool } from "./generate_tool_implementations.js";
+export type {
+  GenerateToolImplementationsInput,
+  ImplementationMode,
+  IntegrationConfig,
+  ToolImplementation,
+  ToolImplementationsOutput,
+  GeneratedFile as ToolGeneratedFile,
+  GenerateLlmFn as ImplementLlmFn,
+} from "./generate_tool_implementations.js";
 
 // C.1.9 — Iterate Agent
 export { IterateAgentTool } from "./iterate_agent.js";

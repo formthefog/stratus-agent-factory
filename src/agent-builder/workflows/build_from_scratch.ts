@@ -2,8 +2,8 @@
  * Build From Scratch Workflow — End-to-end agent construction
  *
  * Orchestrates the full pipeline: domain analysis → tool registry →
- * probe selection → (optional training) → test scenarios → configuration →
- * testing → (fix loop) → deployment.
+ * tool implementation generation → probe selection → (optional training) →
+ * test scenarios → configuration → testing → (fix loop) → deployment.
  *
  * @purpose Orchestrate the full "build agent from scratch" workflow
  * @spec AGENT_FACTORY_SPEC.md#c31-design-the-build-agent-from-scratch-workflow
@@ -16,6 +16,10 @@ import type {
   GenerateToolRegistryTool,
   ApiEndpoint,
   ToolRegistryOutput,
+  GenerateToolImplementationsTool,
+  ImplementationMode,
+  IntegrationConfig,
+  ToolImplementationsOutput,
   GenerateTestScenariosTool,
   TestSuiteOutput,
   SelectProbeTool,
@@ -38,14 +42,20 @@ import type {
 export interface BuildFromScratchInput {
   /** Natural language description of the domain */
   domainDescription: string;
-  /** Available API endpoints */
-  apis: ApiEndpoint[];
+  /** Available API endpoints (optional — if omitted, tools are generated from domain analysis) */
+  apis?: ApiEndpoint[];
   /** Agent name */
   agentName: string;
   /** Agent identifier (snake_case) */
   agentId: string;
   /** LLM preferences */
   llm: { provider: string; model: string };
+  /** Tool implementation mode (default: "mock" when no apis, "api_client" when apis provided) */
+  implementationMode?: ImplementationMode;
+  /** Target language for generated tool implementations (default: "typescript") */
+  implementationLanguage?: "typescript" | "python";
+  /** Integration configs for API-backed tools */
+  integrations?: IntegrationConfig[];
   /** Channels to configure */
   channels?: Array<{ type: "slack" | "discord" | "telegram" | "web" | "api"; settings: Record<string, string> }>;
   /** Persona description (optional) */
@@ -73,6 +83,7 @@ export interface BuildProgress {
 export type WorkflowPhase =
   | "analyze_domain"
   | "generate_tools"
+  | "generate_implementations"
   | "select_probe"
   | "train_probe"
   | "generate_tests"
@@ -88,6 +99,7 @@ export interface BuildResult {
   /** All intermediate results */
   domainAnalysis?: DomainAnalysis;
   toolRegistry?: ToolRegistryOutput;
+  toolImplementations?: ToolImplementationsOutput;
   probeRecommendation?: ProbeRecommendation;
   probeTraining?: ProbeTrainingResult;
   testSuite?: TestSuiteOutput;
@@ -112,6 +124,7 @@ export type ProgressFn = (progress: BuildProgress) => void;
 export class BuildFromScratchWorkflow {
   private analyzeDomain: AnalyzeDomainTool;
   private generateToolRegistry: GenerateToolRegistryTool;
+  private generateToolImplementations: GenerateToolImplementationsTool;
   private generateTestScenarios: GenerateTestScenariosTool;
   private selectProbe: SelectProbeTool;
   private trainProbe: TrainProbeTool;
@@ -122,6 +135,7 @@ export class BuildFromScratchWorkflow {
   constructor(tools: {
     analyzeDomain: AnalyzeDomainTool;
     generateToolRegistry: GenerateToolRegistryTool;
+    generateToolImplementations: GenerateToolImplementationsTool;
     generateTestScenarios: GenerateTestScenariosTool;
     selectProbe: SelectProbeTool;
     trainProbe: TrainProbeTool;
@@ -131,6 +145,7 @@ export class BuildFromScratchWorkflow {
   }) {
     this.analyzeDomain = tools.analyzeDomain;
     this.generateToolRegistry = tools.generateToolRegistry;
+    this.generateToolImplementations = tools.generateToolImplementations;
     this.generateTestScenarios = tools.generateTestScenarios;
     this.selectProbe = tools.selectProbe;
     this.trainProbe = tools.trainProbe;
@@ -157,10 +172,11 @@ export class BuildFromScratchWorkflow {
     emit({ phase: "analyze_domain", status: "running" });
     let domainAnalysis: DomainAnalysis;
     try {
+      const availableApis = input.apis?.map((a) => `${a.method ?? "POST"} ${a.endpoint}: ${a.description}`) ?? [];
       domainAnalysis = await this.analyzeDomain.execute(
         {
           description: input.domainDescription,
-          availableApis: input.apis.map((a) => `${a.method ?? "POST"} ${a.endpoint}: ${a.description}`),
+          availableApis,
           exampleGoals: input.exampleGoals,
         } satisfies AnalyzeDomainInput,
         signal,
@@ -182,13 +198,41 @@ export class BuildFromScratchWorkflow {
     let toolRegistry: ToolRegistryOutput;
     try {
       toolRegistry = await this.generateToolRegistry.execute(
-        { analysis: domainAnalysis, apis: input.apis },
+        { analysis: domainAnalysis, apis: input.apis ?? [] },
         signal,
       );
       emit({ phase: "generate_tools", status: "complete", detail: `${toolRegistry.tools.length} tools, ${toolRegistry.similarityWarnings.length} warnings` });
     } catch (err) {
       emit({ phase: "generate_tools", status: "failed", detail: String(err) });
       return { success: false, finalPhase: "generate_tools", fixIterations: 0, error: String(err), log, domainAnalysis };
+    }
+
+    // ── Step 2.5: Generate Tool Implementations ─────────────────────────
+    // Determines mode: if APIs provided, default to api_client; otherwise mock
+    const implMode = input.implementationMode ?? (input.apis?.length ? "api_client" : "mock");
+    const implLanguage = input.implementationLanguage ?? "typescript";
+
+    emit({ phase: "generate_implementations", status: "running", detail: `mode=${implMode}, lang=${implLanguage}` });
+    let toolImplementations: ToolImplementationsOutput | undefined;
+    try {
+      toolImplementations = await this.generateToolImplementations.execute(
+        {
+          tools: toolRegistry.tools,
+          analysis: domainAnalysis,
+          mode: implMode,
+          language: implLanguage,
+          integrations: input.integrations,
+        },
+        signal,
+      );
+      emit({ phase: "generate_implementations", status: "complete", detail: `${toolImplementations.totalFiles} files (${implMode})` });
+    } catch (err) {
+      // Non-fatal for mock/stub — agent can still work with tool definitions alone
+      if (implMode === "api_client") {
+        emit({ phase: "generate_implementations", status: "failed", detail: String(err) });
+        return { success: false, finalPhase: "generate_implementations", fixIterations: 0, error: String(err), log, domainAnalysis, toolRegistry };
+      }
+      emit({ phase: "generate_implementations", status: "failed", detail: `Non-fatal: ${err}. Continuing with tool definitions only.` });
     }
 
     // ── Step 3: Select Probe ────────────────────────────────────────────
@@ -202,7 +246,7 @@ export class BuildFromScratchWorkflow {
       emit({ phase: "select_probe", status: "complete", detail: `${probeRecommendation.primaryProbe} (accuracy: ${(probeRecommendation.expectedAccuracy * 100).toFixed(0)}%)` });
     } catch (err) {
       emit({ phase: "select_probe", status: "failed", detail: String(err) });
-      return { success: false, finalPhase: "select_probe", fixIterations: 0, error: String(err), log, domainAnalysis, toolRegistry };
+      return { success: false, finalPhase: "select_probe", fixIterations: 0, error: String(err), log, domainAnalysis, toolRegistry, toolImplementations };
     }
 
     // ── Step 4: Train Probe (optional) ──────────────────────────────────
@@ -246,7 +290,7 @@ export class BuildFromScratchWorkflow {
       emit({ phase: "generate_tests", status: "complete", detail: `${testSuite.totalScenarios} scenarios` });
     } catch (err) {
       emit({ phase: "generate_tests", status: "failed", detail: String(err) });
-      return { success: false, finalPhase: "generate_tests", fixIterations: 0, error: String(err), log, domainAnalysis, toolRegistry, probeRecommendation, probeTraining };
+      return { success: false, finalPhase: "generate_tests", fixIterations: 0, error: String(err), log, domainAnalysis, toolRegistry, toolImplementations, probeRecommendation, probeTraining };
     }
 
     // ── Step 6 + 7: Configure → Test → Fix Loop ────────────────────────
@@ -275,7 +319,7 @@ export class BuildFromScratchWorkflow {
         emit({ phase: "configure_agent", status: "complete", detail: `${agentConfig.files.length} files` });
       } catch (err) {
         emit({ phase: "configure_agent", status: "failed", detail: String(err) });
-        return { success: false, finalPhase: "configure_agent", fixIterations, error: String(err), log, domainAnalysis, toolRegistry, probeRecommendation, probeTraining, testSuite };
+        return { success: false, finalPhase: "configure_agent", fixIterations, error: String(err), log, domainAnalysis, toolRegistry, toolImplementations, probeRecommendation, probeTraining, testSuite };
       }
 
       // Test
@@ -288,7 +332,7 @@ export class BuildFromScratchWorkflow {
         emit({ phase: "test_agent", status: "complete", detail: `${testReport.passed}/${testReport.totalScenarios} passed (${(testReport.passRate * 100).toFixed(0)}%)` });
       } catch (err) {
         emit({ phase: "test_agent", status: "failed", detail: String(err) });
-        return { success: false, finalPhase: "test_agent", fixIterations, error: String(err), log, domainAnalysis, toolRegistry, probeRecommendation, probeTraining, testSuite, agentConfig };
+        return { success: false, finalPhase: "test_agent", fixIterations, error: String(err), log, domainAnalysis, toolRegistry, toolImplementations, probeRecommendation, probeTraining, testSuite, agentConfig };
       }
 
       // Check pass rate
@@ -334,6 +378,7 @@ export class BuildFromScratchWorkflow {
       finalPhase: deployment ? "deploy_agent" : "test_agent",
       domainAnalysis,
       toolRegistry,
+      toolImplementations,
       probeRecommendation,
       probeTraining,
       testSuite,
