@@ -1,0 +1,87 @@
+# Agent Builder Tool Registry
+# These are the 9 tools the Agent Builder Agent uses to construct other agents.
+# Rich descriptions follow the training format: "{type} ({domain}). {desc}. effects: {effects}"
+
+domain: agent_building
+
+tools:
+  - id: analyze_domain
+    action_type: analyze_domain
+    description: "Analyze a customer's domain to extract entities, actions, workflows, and goals"
+    rich_description: "analyze_domain (agent_building). Analyzes a natural language domain description to extract key entities, common actions, typical workflows, and user goals. Maps against existing training domains to identify coverage and gaps. effects: produces structured domain analysis with training coverage assessment and probe recommendation"
+    effects: "Produces a DomainAnalysis with entities, actions, workflows, goals, training domain matches, gap analysis, and custom probe recommendation"
+    preconditions: "Domain description provided by user"
+    requires_generation: false
+
+  - id: generate_tool_registry
+    action_type: generate_tool_registry
+    description: "Generate complete tool definitions from domain analysis and available APIs"
+    rich_description: "generate_tool_registry (agent_building). Creates tool definitions with rich descriptions matching the world model training format from a domain analysis and API endpoint list. Validates embedding-space separation between tools. effects: produces agent.tools.yaml with all tool definitions, similarity warnings, and missing capability analysis"
+    effects: "Produces complete tool registry YAML, similarity warnings for tools too close in embedding space, and list of missing capabilities"
+    preconditions: "Domain analysis completed via analyze_domain"
+    requires_generation: false
+
+  - id: generate_test_scenarios
+    action_type: generate_test_scenarios
+    description: "Create test scenarios for validating agent behavior across happy paths, edge cases, and failures"
+    rich_description: "generate_test_scenarios (agent_building). Generates 10-20 representative test scenarios covering happy paths, multi-step workflows, edge cases, failure recovery, and ambiguous goals. Each scenario includes expected tool sequences and success criteria. effects: produces test suite manifest with simulated tool responses for sandbox testing"
+    effects: "Produces test suite with scenarios categorized by type, each with conversation, expected tool sequence, success criteria, and simulated responses"
+    preconditions: "Domain analysis and tool registry both completed"
+    requires_generation: true
+    generation_template: |
+      Generate {count} test scenarios for the "{domain}" domain.
+      Include scenarios covering: {workflow_names}.
+      Balance across categories: happy_path, multi_step, edge_case, failure, ambiguous.
+
+  - id: select_probe
+    action_type: select_probe
+    description: "Recommend the best probe configuration for a domain based on training coverage"
+    rich_description: "select_probe (agent_building). Evaluates available probes against a domain analysis to recommend the optimal probe configuration. Scores probes by domain match, action vocabulary coverage, and training accuracy. Recommends cascade configuration and estimates expected accuracy. effects: produces probe recommendation with confidence score, cascade config, and custom training assessment"
+    effects: "Produces probe recommendation with primary probe ID, expected accuracy, cascade configuration, and whether custom training is recommended"
+    preconditions: "Domain analysis completed"
+    requires_generation: false
+
+  - id: train_probe
+    action_type: train_probe
+    description: "Train a custom LoRA probe on customer data or synthetic trajectories"
+    rich_description: "train_probe (agent_building). Trains a LoRA probe fine-tuned from a base probe using customer production traces or LLM-generated synthetic trajectories. Evaluates per-action accuracy and applies quality gates. effects: produces trained probe weights with evaluation metrics, per-action accuracy breakdown, and quality check results"
+    effects: "Produces trained probe weights file, evaluation metrics (top-1/top-3 accuracy, MRR), per-action accuracy, and quality pass/fail"
+    preconditions: "Domain analysis and tool registry completed. Optionally: production traces for training data"
+    requires_generation: false
+
+  - id: configure_agent
+    action_type: configure_agent
+    description: "Generate complete agent configuration directory with all required files"
+    rich_description: "configure_agent (agent_building). Generates the full agent configuration directory including openclaw.json with Stratus extensions, tool skill manifests, AGENTS.md instructions, SOUL.md persona, memory templates, channel configs, and probe configuration. effects: produces a deployable agent configuration directory with all files needed to run the agent"
+    effects: "Produces complete agent directory: openclaw.json, agent.tools.yaml, AGENTS.md, SOUL.md, memory templates, skill manifests per tool, channel configs, probe_config.yaml"
+    preconditions: "Domain analysis, tool registry, and probe selection all completed"
+    requires_generation: true
+    generation_template: |
+      Generate agent configuration for "{agent_name}" in the "{domain}" domain.
+      Persona: {persona_description}
+      LLM: {llm_provider}/{llm_model}
+      Channels: {channel_types}
+
+  - id: test_agent
+    action_type: test_agent
+    description: "Run test scenarios against a configured agent in sandbox mode"
+    rich_description: "test_agent (agent_building). Starts an agent in sandbox mode and runs each test scenario, recording actions taken, goal proximity curves, tool sequence matches, and per-criterion pass/fail. Generates a test report with pass rate, latency stats, and recommendations. effects: produces test report with per-scenario results, category breakdown, and actionable recommendations"
+    effects: "Produces test report with pass/fail per scenario, latency stats, category breakdown, and recommendations for improvement"
+    preconditions: "Agent configuration and test scenarios both completed"
+    requires_generation: false
+
+  - id: deploy_agent
+    action_type: deploy_agent
+    description: "Package and deploy a tested agent to local, Docker, or cloud environments"
+    rich_description: "deploy_agent (agent_building). Packages a tested agent configuration and deploys to the target environment: local install to ~/.openclaw/agents/, Docker container with optional sidecar and GPU support, or cloud hosting on Fly.io/Railway/Render. Runs smoke test on deployed instance. effects: produces deployment artifacts, access URL, and smoke test results"
+    effects: "Deploys agent to target, produces deployment artifacts (Dockerfile, fly.toml, etc.), access URL, and smoke test confirmation"
+    preconditions: "Agent tested with passing test report (minimum 70% pass rate)"
+    requires_generation: false
+
+  - id: iterate_agent
+    action_type: iterate_agent
+    description: "Analyze production traces and suggest improvements to an existing agent"
+    rich_description: "iterate_agent (agent_building). Analyzes production traces and user feedback from a deployed agent to identify issues: suboptimal actions, missing tools, probe failures, latency problems, error patterns, and stagnation. Generates prioritized suggestions including tool changes, probe retraining, and config adjustments. effects: produces iteration report with issues, suggestions, and optionally auto-applied safe changes"
+    effects: "Produces iteration report with identified issues (6 categories), prioritized suggestions, and auto-applied changes if enabled"
+    preconditions: "Agent deployed with production traces available"
+    requires_generation: false

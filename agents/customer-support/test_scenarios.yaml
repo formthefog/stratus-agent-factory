@@ -1,0 +1,263 @@
+# Customer Support Agent — Test Scenarios
+# 15 scenarios covering common support interactions
+
+scenarios:
+  # --- Simple Resolution ---
+  - id: support-h-01
+    name: "How-to question from knowledge base"
+    category: happy_path
+    goal: "Customer asks: How do I export my data to CSV?"
+    initial_state:
+      ticket_id: "T-001"
+      customer: "alice@example.com"
+      question: "How do I export my data?"
+    expected_actions:
+      - search_knowledge_base
+      - reply_to_ticket
+      - close_ticket
+    max_steps: 4
+    success_criteria: "Answer provided with link to docs, ticket closed"
+
+  - id: support-h-02
+    name: "Login issue — password reset"
+    category: happy_path
+    goal: "Customer can't log in. Diagnose and fix."
+    initial_state:
+      ticket_id: "T-002"
+      customer: "bob@example.com"
+      issue: "Can't log in, password not working"
+    expected_actions:
+      - get_customer
+      - check_account_health
+      - apply_fix
+      - reply_to_ticket
+    max_steps: 6
+    success_criteria: "Account unlocked or password reset, customer notified"
+
+  - id: support-h-03
+    name: "Known issue with fix"
+    category: happy_path
+    goal: "Dashboard loading slowly. Known issue KI-2847 exists with fix."
+    initial_state:
+      ticket_id: "T-003"
+      customer: "carol@example.com"
+      issue: "Dashboard takes 30 seconds to load"
+    expected_actions:
+      - get_customer
+      - search_known_issues
+      - apply_fix
+      - reply_to_ticket
+      - close_ticket
+    max_steps: 6
+    success_criteria: "Known fix applied, customer informed, ticket closed"
+
+  # --- Investigation ---
+  - id: support-h-04
+    name: "Unknown issue requiring investigation"
+    category: multi_step
+    goal: "Customer reports data not syncing. No known issue. Investigate."
+    initial_state:
+      ticket_id: "T-004"
+      customer: "dave@example.com"
+      issue: "Data sync stopped working 2 hours ago"
+    expected_actions:
+      - get_customer
+      - check_account_health
+      - search_known_issues
+      - check_service_status
+      - escalate_ticket
+    max_steps: 8
+    success_criteria: "Issue investigated, escalated with context if unresolvable"
+
+  # --- Billing ---
+  - id: support-h-05
+    name: "Billing inquiry — explain charge"
+    category: happy_path
+    goal: "Customer asks why they were charged $99 instead of $49."
+    initial_state:
+      ticket_id: "T-005"
+      customer: "eve@example.com"
+      issue: "Unexpected $99 charge"
+    expected_actions:
+      - get_customer
+      - get_billing_history
+      - get_plan_details
+      - reply_to_ticket
+    max_steps: 5
+    success_criteria: "Charge explained (plan upgrade), customer understands"
+
+  - id: support-h-06
+    name: "Refund request — legitimate overcharge"
+    category: happy_path
+    goal: "Customer was charged twice for March. Process refund."
+    initial_state:
+      ticket_id: "T-006"
+      customer: "frank@example.com"
+      issue: "Charged twice this month"
+    expected_actions:
+      - get_customer
+      - get_billing_history
+      - apply_credit
+      - reply_to_ticket
+      - close_ticket
+    max_steps: 6
+    success_criteria: "Duplicate charge identified, credit applied, customer notified"
+
+  # --- Feature Requests ---
+  - id: support-h-07
+    name: "New feature request"
+    category: happy_path
+    goal: "Customer wants PDF export. No existing request."
+    initial_state:
+      ticket_id: "T-007"
+      customer: "grace@example.com"
+      request: "Can you add PDF export for reports?"
+    expected_actions:
+      - search_feature_requests
+      - create_feature_request
+      - reply_to_ticket
+    max_steps: 4
+    success_criteria: "Feature request created, customer informed"
+
+  - id: support-h-08
+    name: "Existing feature request — upvote"
+    category: happy_path
+    goal: "Customer wants dark mode. Request already exists with 42 votes."
+    initial_state:
+      ticket_id: "T-008"
+      customer: "hank@example.com"
+      request: "Please add dark mode"
+    expected_actions:
+      - search_feature_requests
+      - upvote_feature_request
+      - reply_to_ticket
+    max_steps: 4
+    success_criteria: "Vote added, customer informed of status and vote count"
+
+  # --- Escalation ---
+  - id: support-h-09
+    name: "Complex technical escalation"
+    category: multi_step
+    goal: "Customer reports intermittent API errors. Need engineering investigation."
+    initial_state:
+      ticket_id: "T-009"
+      customer: "iris@enterprise.com"
+      issue: "API returns 500 errors randomly, about 5% of requests"
+    expected_actions:
+      - get_customer
+      - check_account_health
+      - search_known_issues
+      - check_service_status
+      - escalate_ticket
+    max_steps: 7
+    success_criteria: "Full investigation documented, escalated to engineering"
+
+  - id: support-h-10
+    name: "VIP customer with SLA"
+    category: edge_case
+    goal: "Enterprise customer with 4-hour SLA reports critical feature broken."
+    initial_state:
+      ticket_id: "T-010"
+      customer: "john@bigcorp.com"
+      plan: "Enterprise"
+      sla: "4-hour response"
+      issue: "Workflow automation stopped running"
+    expected_actions:
+      - get_customer
+      - check_account_health
+      - search_known_issues
+      - reply_to_ticket
+      - escalate_ticket
+    max_steps: 6
+    success_criteria: "Acknowledged within SLA, investigated, escalated with priority"
+
+  # --- Complex Scenarios ---
+  - id: support-h-11
+    name: "Multiple issues in one ticket"
+    category: complex
+    goal: "Customer reports 3 issues: slow dashboard, missing data, and billing question."
+    initial_state:
+      ticket_id: "T-011"
+      customer: "kate@example.com"
+      issues:
+        - "Dashboard slow"
+        - "Missing data from last week"
+        - "Why am I on Pro plan?"
+    expected_actions:
+      - get_customer
+      - search_known_issues
+      - check_account_health
+      - get_billing_history
+      - reply_to_ticket
+    max_steps: 10
+    success_criteria: "All three issues addressed in one comprehensive reply"
+
+  - id: support-h-12
+    name: "Angry customer de-escalation"
+    category: edge_case
+    goal: "Customer is very frustrated — third time contacting about same issue."
+    initial_state:
+      ticket_id: "T-012"
+      customer: "leo@example.com"
+      issue: "STILL broken after two tickets. This is unacceptable."
+      history: "2 previous tickets for same issue, both marked resolved"
+    expected_actions:
+      - get_customer
+      - get_customer_history
+      - check_account_health
+      - reply_to_ticket
+      - escalate_ticket
+    max_steps: 7
+    success_criteria: "Issue acknowledged, history reviewed, escalated with priority"
+
+  - id: support-h-13
+    name: "Service outage communication"
+    category: edge_case
+    goal: "Multiple customers reporting service down. Active incident ongoing."
+    initial_state:
+      ticket_id: "T-013"
+      customer: "mary@example.com"
+      issue: "App is down, can't access anything"
+    expected_actions:
+      - check_service_status
+      - reply_to_ticket
+      - update_ticket
+    max_steps: 4
+    success_criteria: "Customer informed of active incident, linked to status page"
+
+  # --- Plan Management ---
+  - id: support-h-14
+    name: "Plan upgrade request"
+    category: happy_path
+    goal: "Customer wants to upgrade from Business to Pro plan."
+    initial_state:
+      ticket_id: "T-014"
+      customer: "nick@example.com"
+      request: "I'd like to upgrade to Pro"
+    expected_actions:
+      - get_customer
+      - get_plan_details
+      - change_plan
+      - reply_to_ticket
+      - close_ticket
+    max_steps: 6
+    success_criteria: "Plan upgraded, prorating explained, confirmation sent"
+
+  # --- Follow-Up ---
+  - id: support-h-15
+    name: "Follow-up on unresolved ticket"
+    category: multi_step
+    goal: "Customer replies to week-old ticket: 'This still isn't fixed.'"
+    initial_state:
+      ticket_id: "T-015"
+      customer: "olga@example.com"
+      issue: "Original: data import failing. Marked resolved 7 days ago."
+      follow_up: "It's happening again"
+    expected_actions:
+      - get_ticket
+      - get_customer
+      - get_customer_history
+      - check_account_health
+      - reply_to_ticket
+    max_steps: 8
+    success_criteria: "Previous context reviewed, issue re-investigated, proper resolution"

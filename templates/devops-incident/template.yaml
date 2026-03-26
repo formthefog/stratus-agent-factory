@@ -1,0 +1,4 @@
+name: DevOps Incident Response
+domain: devops_incident
+description: Agent for triaging, diagnosing, and resolving infrastructure incidents
+training_domains: [devops_incident, incident_response, monitoring]

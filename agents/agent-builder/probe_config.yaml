@@ -1,0 +1,34 @@
+# Agent Builder Probe Configuration
+#
+# The Agent Builder uses a general planning probe initially.
+# Once enough agent-building traces are collected, a dedicated
+# agent-building-v1 probe should be trained for better tool selection.
+
+# Primary probe for action ranking
+primary: planning-v2
+
+# Cascade: fall back to planning-v1 if v2 confidence is low
+cascade:
+  primary: planning-v2
+  fallback: planning-v1
+  fallback_threshold: 0.3  # Switch to fallback if primary confidence < 0.3
+
+# Future: dedicated probe (uncomment when trained)
+# primary: agent-building-v1
+# cascade:
+#   primary: agent-building-v1
+#   fallback: planning-v2
+#   fallback_threshold: 0.25
+
+# Training plan for agent-building-v1
+training_plan:
+  base_probe: planning-v2
+  lora_rank: 16
+  min_traces: 50  # Minimum agent-building sessions before training
+  target_accuracy: 0.80
+  data_sources:
+    - type: production_traces
+      description: "Traces from real agent-building sessions"
+    - type: synthetic
+      description: "Generated from domain specs + tool registry"
+  retrain_trigger: "Every 100 new production traces"

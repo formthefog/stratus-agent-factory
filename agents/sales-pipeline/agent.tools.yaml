@@ -1,0 +1,125 @@
+# Sales Pipeline Agent — Tool Registry
+# 22 tools across 5 categories
+
+domain: sales_pipeline
+
+tools:
+  # --- CRM Operations ---
+  - id: get_contact
+    action_type: get_contact
+    rich_description: "get_contact (crm). Get a contact record with full history — deals, activities, notes, last interaction date, qualification score. effects: returns contact details with relationship timeline"
+    requires_generation: false
+
+  - id: update_contact
+    action_type: update_contact
+    rich_description: "update_contact (crm). Update contact fields — lifecycle stage, lead score, owner, custom fields. effects: contact record updated in CRM"
+    requires_generation: false
+
+  - id: search_contacts
+    action_type: search_contacts
+    rich_description: "search_contacts (crm). Search contacts by name, company, email, or custom criteria. Supports filters for stage, score, and last activity. effects: returns matching contact records"
+    requires_generation: false
+
+  - id: get_deal
+    action_type: get_deal
+    rich_description: "get_deal (crm). Get deal record with stage, value, close date, champion, activities, and associated contacts. effects: returns full deal context"
+    requires_generation: false
+
+  - id: update_deal
+    action_type: update_deal
+    rich_description: "update_deal (crm). Update deal stage, value, close date, or custom properties. Logs stage change as activity. effects: deal record updated, stage change tracked"
+    requires_generation: false
+
+  - id: search_deals
+    action_type: search_deals
+    rich_description: "search_deals (crm). Search deals by stage, owner, value range, close date, or days since last activity. effects: returns matching deals sorted by relevance"
+    requires_generation: false
+
+  - id: create_deal
+    action_type: create_deal
+    rich_description: "create_deal (crm). Create a new deal in the pipeline linked to a contact. Sets initial stage, estimated value, and close date. effects: deal created and visible in pipeline"
+    requires_generation: false
+
+  - id: add_activity
+    action_type: add_activity
+    rich_description: "add_activity (crm). Log an activity on a contact or deal — call, email, meeting, note. Includes timestamp and summary. effects: activity recorded in CRM timeline"
+    requires_generation: true
+    generation_template: "Contact: {contact}\nType: {activity_type}\nSummary: {summary}"
+
+  - id: create_task
+    action_type: create_task
+    rich_description: "create_task (crm). Create a follow-up task with due date, assigned owner, and description. Linked to contact or deal. effects: task created and visible in task queue"
+    requires_generation: false
+
+  - id: get_pipeline_metrics
+    action_type: get_pipeline_metrics
+    rich_description: "get_pipeline_metrics (analytics). Get pipeline analytics — total value by stage, deal count, average deal size, conversion rates, velocity. effects: returns pipeline summary metrics"
+    requires_generation: false
+
+  # --- Email ---
+  - id: search_emails
+    action_type: search_emails
+    rich_description: "search_emails (email). Search email threads with a contact or about a topic. Returns subject, date, snippet. effects: returns matching email threads"
+    requires_generation: false
+
+  - id: draft_email
+    action_type: draft_email
+    rich_description: "draft_email (email). Draft a personalized email based on deal context, last interaction, and recipient role. Follows brand voice and keeps under 150 words for follow-ups. effects: draft created for review or send"
+    requires_generation: true
+    generation_template: "To: {recipient}\nSubject: {subject}\nContext: {deal_context}\nPurpose: {purpose}\nBody: {body}"
+
+  - id: send_email
+    action_type: send_email
+    rich_description: "send_email (email). Send an email to a contact. Automatically logs as activity in CRM. effects: email delivered, activity logged"
+    requires_generation: false
+
+  - id: get_email_thread
+    action_type: get_email_thread
+    rich_description: "get_email_thread (email). Get the full email thread with a contact for context before responding. effects: returns complete email conversation"
+    requires_generation: false
+
+  # --- Calendar ---
+  - id: check_calendar
+    action_type: check_calendar
+    rich_description: "check_calendar (calendar). Check calendar availability for a date range. Returns free slots with duration. effects: returns available time slots"
+    requires_generation: false
+
+  - id: schedule_meeting
+    action_type: schedule_meeting
+    rich_description: "schedule_meeting (calendar). Create a calendar event with attendees, agenda, and video link. Sends invites. effects: meeting created, invitations sent to all attendees"
+    requires_generation: true
+    generation_template: "Title: {title}\nAttendees: {attendees}\nTime: {time}\nAgenda: {agenda}"
+
+  - id: get_upcoming_meetings
+    action_type: get_upcoming_meetings
+    rich_description: "get_upcoming_meetings (calendar). Get all meetings scheduled in the next N days with attendees and context. effects: returns upcoming meeting list"
+    requires_generation: false
+
+  # --- Research ---
+  - id: research_company
+    action_type: research_company
+    rich_description: "research_company (research). Research a company — size, industry, funding, tech stack, recent news, key people. Uses LinkedIn and web data. effects: returns company profile with enriched data"
+    requires_generation: false
+
+  - id: research_contact
+    action_type: research_contact
+    rich_description: "research_contact (research). Research a contact — current role, tenure, LinkedIn activity, shared connections, recent posts. effects: returns contact insights for personalization"
+    requires_generation: false
+
+  - id: check_signals
+    action_type: check_signals
+    rich_description: "check_signals (research). Check buying signals for a company — new job postings, funding rounds, tech stack changes, competitor mentions. effects: returns signal indicators with relevance score"
+    requires_generation: false
+
+  # --- Communication ---
+  - id: notify_slack
+    action_type: notify_slack
+    rich_description: "notify_slack (communication). Post a deal update or alert to the sales Slack channel. Formatted with deal name, stage, and action taken. effects: message posted to sales channel"
+    requires_generation: true
+    generation_template: "Channel: {channel}\nDeal: {deal_name}\nUpdate: {message}"
+
+  - id: draft_summary
+    action_type: draft_summary
+    rich_description: "draft_summary (communication). Generate a structured summary — deal briefing, pipeline report, or meeting prep. Formatted for quick scanning. effects: summary text generated"
+    requires_generation: true
+    generation_template: "Type: {summary_type}\nContext: {context}\nFormat: {format}"

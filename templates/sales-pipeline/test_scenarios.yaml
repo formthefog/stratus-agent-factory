@@ -1,0 +1,74 @@
+domain: sales_pipeline
+
+scenarios:
+  - name: "New lead qualification"
+    category: happy_path
+    goal: "We got a new inbound lead from Acme Corp, qualify them"
+    expected_sequence: [get_deal_info, qualify_lead, log_activity, set_followup]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Move deal to proposal stage"
+    category: happy_path
+    goal: "The demo went great with TechCo, send them a proposal"
+    expected_sequence: [get_deal_info, create_proposal, send_email, update_deal_stage, log_activity]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Schedule demo after qualification"
+    category: happy_path
+    goal: "StartupsInc is qualified, schedule a demo for them"
+    expected_sequence: [get_deal_info, schedule_demo, send_email, log_activity]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Full deal cycle — lead to close"
+    category: multi_step
+    goal: "New lead BigCorp just signed up, take them through the full pipeline"
+    expected_sequence: [get_deal_info, qualify_lead, update_deal_stage, schedule_demo, create_proposal, send_email, update_deal_stage]
+    expected_outcome: success
+    max_steps: 15
+
+  - name: "Re-engage stale deal"
+    category: multi_step
+    goal: "Haven't heard from DataFlow in 2 weeks, re-engage them"
+    expected_sequence: [get_deal_info, send_email, log_activity, set_followup]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Handle objection in email"
+    category: edge_case
+    goal: "CloudBase says our pricing is too high, respond thoughtfully"
+    expected_sequence: [get_deal_info, send_email, log_activity]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Disqualify a lead"
+    category: edge_case
+    goal: "This lead has no budget and no timeline, mark them appropriately"
+    expected_sequence: [get_deal_info, qualify_lead, update_deal_stage, log_activity]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "CRM is down"
+    category: failure
+    goal: "Log the call I just had with NetInc"
+    expected_outcome: graceful_failure
+    expected_sequence: [get_deal_info]
+    max_steps: 4
+    simulated_responses:
+      get_deal_info: {success: false, output: "CRM connection timeout"}
+
+  - name: "Vague request about a deal"
+    category: ambiguous
+    goal: "What's happening with that company we talked to last week?"
+    expected_sequence: [get_deal_info]
+    expected_outcome: partial
+    max_steps: 5
+
+  - name: "Multiple deals need attention"
+    category: ambiguous
+    goal: "Check on my pipeline and tell me what needs attention"
+    expected_sequence: [get_deal_info]
+    expected_outcome: success
+    max_steps: 10

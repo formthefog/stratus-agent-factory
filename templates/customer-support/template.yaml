@@ -1,0 +1,4 @@
+name: Customer Support
+domain: customer_support
+description: Agent for handling customer inquiries, troubleshooting issues, and managing tickets
+training_domains: [customer_support, knowledge_base, bug_tracking]

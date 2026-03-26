@@ -1,0 +1,83 @@
+domain: personal_assistant
+
+scenarios:
+  - name: "Morning briefing"
+    category: happy_path
+    goal: "What's on my schedule today?"
+    expected_sequence: [check_calendar, get_tasks, triage_inbox, draft_summary]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Schedule a meeting"
+    category: happy_path
+    goal: "Schedule a 30-minute call with Sarah tomorrow at 2pm"
+    expected_sequence: [check_calendar, schedule_event]
+    expected_outcome: success
+    max_steps: 4
+
+  - name: "Quick task creation"
+    category: happy_path
+    goal: "Remind me to review the Q2 budget by Friday"
+    expected_sequence: [create_task]
+    expected_outcome: success
+    max_steps: 3
+
+  - name: "Email reply with context lookup"
+    category: multi_step
+    goal: "Reply to Mike's email about the partnership proposal — reference what we discussed last week"
+    expected_sequence: [triage_inbox, search_notes, send_email]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Reschedule conflicting meeting"
+    category: multi_step
+    goal: "I have a conflict at 3pm Thursday — move my call with the design team to a free slot this week"
+    expected_sequence: [check_calendar, check_calendar, schedule_event, send_email]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Prepare for upcoming meeting"
+    category: multi_step
+    goal: "Prep me for my 1:1 with Jordan — pull any relevant notes and recent emails"
+    expected_sequence: [check_calendar, search_notes, triage_inbox, draft_summary]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Calendar conflict detection"
+    category: edge_case
+    goal: "Book a lunch meeting with Alex on Wednesday at noon"
+    expected_sequence: [check_calendar, schedule_event]
+    expected_outcome: success
+    max_steps: 5
+    simulated_responses:
+      check_calendar: {success: true, output: "Conflict: Team standup 11:45-12:15 on Wednesday"}
+
+  - name: "Ambiguous time reference"
+    category: edge_case
+    goal: "Set up something with the marketing team next week sometime"
+    expected_sequence: [check_calendar, get_tasks]
+    expected_outcome: partial
+    max_steps: 6
+
+  - name: "Calendar service unavailable"
+    category: failure
+    goal: "What meetings do I have tomorrow?"
+    expected_sequence: [check_calendar, get_tasks]
+    expected_outcome: success
+    max_steps: 5
+    simulated_responses:
+      check_calendar: {success: false, error: "Calendar service temporarily unavailable"}
+
+  - name: "Vague request"
+    category: ambiguous
+    goal: "I'm falling behind on everything"
+    expected_sequence: [get_tasks, check_calendar, triage_inbox]
+    expected_outcome: partial
+    max_steps: 8
+
+  - name: "Multi-person coordination"
+    category: ambiguous
+    goal: "Find a time that works for me, Sarah, and Dev for a 1-hour meeting this week"
+    expected_sequence: [check_calendar, schedule_event, send_email]
+    expected_outcome: partial
+    max_steps: 8

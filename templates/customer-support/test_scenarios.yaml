@@ -1,0 +1,74 @@
+domain: customer_support
+
+scenarios:
+  - name: "Known issue — KB article resolves"
+    category: happy_path
+    goal: "I can't log into my account"
+    expected_sequence: [get_customer_info, search_knowledge_base, send_response]
+    expected_outcome: success
+    max_steps: 5
+
+  - name: "Account fix needed"
+    category: happy_path
+    goal: "My settings keep resetting every time I refresh"
+    expected_sequence: [get_customer_info, check_known_issues, apply_fix, send_response]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Simple billing question"
+    category: happy_path
+    goal: "When does my subscription renew?"
+    expected_sequence: [get_customer_info, send_response]
+    expected_outcome: success
+    max_steps: 4
+
+  - name: "Bug report requiring escalation"
+    category: multi_step
+    goal: "The export feature creates corrupted files every time"
+    expected_sequence: [get_customer_info, check_known_issues, search_knowledge_base, create_ticket, escalate, send_response]
+    expected_outcome: success
+    max_steps: 10
+
+  - name: "Known issue with workaround"
+    category: multi_step
+    goal: "The dashboard is loading really slowly"
+    expected_sequence: [get_customer_info, check_known_issues, send_response, update_ticket_status]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "VIP customer with complex issue"
+    category: edge_case
+    goal: "I'm on the enterprise plan and our SSO integration broke after your last update"
+    expected_sequence: [get_customer_info, check_known_issues, create_ticket, escalate, send_response]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Feature request disguised as bug"
+    category: edge_case
+    goal: "Your product doesn't support bulk export, this is broken"
+    expected_sequence: [get_customer_info, search_knowledge_base, send_response]
+    expected_outcome: success
+    max_steps: 6
+
+  - name: "Knowledge base returns no results"
+    category: failure
+    goal: "I'm getting error code XZ-4419"
+    expected_sequence: [get_customer_info, search_knowledge_base, check_known_issues, create_ticket, send_response]
+    expected_outcome: success
+    max_steps: 8
+    simulated_responses:
+      search_knowledge_base: {success: true, output: "No matching articles found"}
+
+  - name: "Angry customer"
+    category: ambiguous
+    goal: "This is the third time I'm contacting you about this, nothing works!"
+    expected_sequence: [get_customer_info, check_known_issues, search_knowledge_base]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Vague symptom description"
+    category: ambiguous
+    goal: "Something is weird with my account"
+    expected_sequence: [get_customer_info, check_known_issues]
+    expected_outcome: partial
+    max_steps: 6

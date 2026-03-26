@@ -1,0 +1,84 @@
+domain: sales_pipeline
+
+tools:
+  - id: update_deal_stage
+    action_type: update_deal_stage
+    description: "Move a deal to a new pipeline stage"
+    rich_description: "update_deal_stage (sales_pipeline). Updates a deal's stage in the CRM pipeline (lead, qualified, proposal, negotiation, closed_won, closed_lost). effects: deal moves to new stage triggering stage-specific automations"
+    effects: "Deal stage updated in CRM, stage automations triggered"
+    preconditions: "Deal exists in CRM"
+    requires_generation: false
+
+  - id: send_email
+    action_type: send_email
+    description: "Compose and send an email to a prospect or customer"
+    rich_description: "send_email (sales_pipeline). Composes and sends a personalized email to a contact with appropriate tone, context from deal history, and clear call to action. effects: email sent to contact advancing the relationship"
+    effects: "Email delivered to contact, activity logged in CRM"
+    preconditions: "Contact email address known"
+    requires_generation: true
+    generation_template: |
+      Compose email to {contact_name} at {company}.
+      Context: {deal_context}
+      Purpose: {email_purpose}
+      Tone: {tone}
+      Include CTA: {call_to_action}
+
+  - id: schedule_demo
+    action_type: schedule_demo
+    description: "Schedule a product demo with a prospect"
+    rich_description: "schedule_demo (sales_pipeline). Creates a calendar event for a product demo, sends invite to prospect and internal team, and prepares demo environment. effects: demo scheduled with all parties invited"
+    effects: "Calendar event created, invites sent to prospect and team"
+    preconditions: "Prospect has expressed interest, available time slots known"
+    requires_generation: false
+
+  - id: create_proposal
+    action_type: create_proposal
+    description: "Generate a customized proposal document for a deal"
+    rich_description: "create_proposal (sales_pipeline). Generates a tailored proposal including pricing, scope, timeline, and terms based on the prospect's needs and deal history. effects: proposal document created ready for review and sending"
+    effects: "Proposal document generated with custom pricing and terms"
+    preconditions: "Requirements gathered, pricing approved"
+    requires_generation: true
+    generation_template: |
+      Create proposal for {company}:
+      Contact: {contact_name}, {contact_title}
+      Requirements: {requirements}
+      Pricing tier: {pricing_tier}
+      Custom terms: {special_terms}
+      Timeline: {implementation_timeline}
+
+  - id: log_activity
+    action_type: log_activity
+    description: "Log a sales activity (call, meeting, email) in the CRM"
+    rich_description: "log_activity (sales_pipeline). Records a sales touchpoint in the CRM with type, outcome, notes, and next steps. effects: activity recorded for deal history and reporting"
+    effects: "Activity recorded in CRM deal timeline"
+    preconditions: "Activity has occurred"
+    requires_generation: true
+    generation_template: |
+      Log {activity_type} with {contact_name}:
+      Outcome: {outcome}
+      Key discussion points: {discussion_points}
+      Next steps: {next_steps}
+
+  - id: get_deal_info
+    action_type: get_deal_info
+    description: "Retrieve full deal details and history from CRM"
+    rich_description: "get_deal_info (sales_pipeline). Fetches complete deal record including stage, value, contacts, activity history, and notes. effects: returns deal context for informed decision making"
+    effects: "Returns deal details, contacts, stage, value, and activity history"
+    preconditions: "Deal ID or contact name known"
+    requires_generation: false
+
+  - id: qualify_lead
+    action_type: qualify_lead
+    description: "Assess a lead against qualification criteria"
+    rich_description: "qualify_lead (sales_pipeline). Evaluates a lead against BANT or custom qualification criteria (budget, authority, need, timeline) and scores it. effects: lead scored and tagged with qualification status"
+    effects: "Lead scored with qualification status (qualified/nurture/disqualified)"
+    preconditions: "Lead information available"
+    requires_generation: false
+
+  - id: set_followup
+    action_type: set_followup
+    description: "Create a follow-up task or reminder for a deal"
+    rich_description: "set_followup (sales_pipeline). Creates a scheduled follow-up task with due date, action description, and priority. effects: reminder created ensuring no deal falls through the cracks"
+    effects: "Follow-up task created with due date and description"
+    preconditions: "Deal exists, follow-up action determined"
+    requires_generation: false

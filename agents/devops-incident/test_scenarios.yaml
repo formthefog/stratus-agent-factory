@@ -1,0 +1,239 @@
+# DevOps Incident Response Agent — Test Scenarios
+# 15 scenarios covering severity levels, failure modes, and runbook execution
+
+scenarios:
+  # --- Simple Resolution ---
+  - id: devops-h-01
+    name: "Simple service restart"
+    category: happy_path
+    goal: "Container for payment-api keeps crashing with OOMKilled. Restart the service."
+    initial_state:
+      incident_id: "INC-001"
+      service: "payment-api"
+      alert: "OOMKilled on payment-api container"
+    expected_actions:
+      - check_metrics
+      - restart_service
+      - run_healthcheck
+      - resolve_incident
+    max_steps: 6
+    success_criteria: "Service restarted and healthy, incident resolved"
+
+  - id: devops-h-02
+    name: "Database connection pool exhaustion"
+    category: happy_path
+    goal: "API returning 500s. Database connections exhausted. Fix it."
+    initial_state:
+      incident_id: "INC-002"
+      service: "order-api"
+      alert: "Connection pool exhausted on order-api"
+    expected_actions:
+      - check_metrics
+      - check_rds
+      - restart_service
+      - run_healthcheck
+    max_steps: 8
+    success_criteria: "Connections restored, service healthy"
+
+  - id: devops-h-03
+    name: "Deployment rollback"
+    category: happy_path
+    goal: "Error rate spiked to 15% after latest deployment. Roll back immediately."
+    initial_state:
+      incident_id: "INC-003"
+      service: "checkout-api"
+      alert: "Error rate 15% on checkout-api"
+      recent_deployment: "v2.5.0 deployed 20 minutes ago"
+    expected_actions:
+      - check_metrics
+      - check_deployment_status
+      - rollback_deployment
+      - run_healthcheck
+      - notify_team
+    max_steps: 7
+    success_criteria: "Rolled back to previous version, error rate normalized"
+
+  # --- Investigation ---
+  - id: devops-h-04
+    name: "Memory leak investigation"
+    category: multi_step
+    goal: "payment-api memory usage climbing steadily. Investigate and fix."
+    initial_state:
+      service: "payment-api"
+      alert: "Memory usage 92% and climbing"
+    expected_actions:
+      - check_metrics
+      - check_logs
+      - check_apm
+      - restart_service
+      - notify_team
+    max_steps: 10
+    success_criteria: "Root cause identified, temporary fix applied"
+
+  - id: devops-h-05
+    name: "DNS resolution failure"
+    category: multi_step
+    goal: "Services can't resolve internal DNS. Multiple services affected."
+    initial_state:
+      alert: "DNS resolution failures across us-east-1"
+      affected_services: ["payment-api", "order-api", "user-api"]
+    expected_actions:
+      - check_cloudwatch
+      - check_logs
+      - create_war_room
+      - notify_team
+    max_steps: 10
+    success_criteria: "DNS issue identified, team notified, war room created"
+
+  - id: devops-h-06
+    name: "SSL certificate expiring"
+    category: multi_step
+    goal: "SSL certificate for api.example.com expires in 18 hours. Renew it."
+    initial_state:
+      alert: "SSL certificate expiring in 18h"
+      domain: "api.example.com"
+    expected_actions:
+      - check_deployment_status
+      - search_runbooks
+      - notify_team
+    max_steps: 8
+    success_criteria: "Renewal initiated or team notified with urgency"
+
+  # --- Complex / Cascading ---
+  - id: devops-h-07
+    name: "DDoS-like traffic spike"
+    category: multi_step
+    goal: "Traffic spike 10x normal. Services degrading. Scale and protect."
+    initial_state:
+      alert: "Traffic 10x normal on web-frontend"
+      services_affected: ["web-frontend", "api-gateway", "payment-api"]
+    expected_actions:
+      - check_metrics
+      - scale_service
+      - notify_team
+      - post_status_update
+    max_steps: 10
+    success_criteria: "Services scaled, traffic handled, status communicated"
+
+  - id: devops-h-08
+    name: "Cascading failure across services"
+    category: complex
+    goal: "Database failover caused cascading failures in 3 dependent services. Stabilize."
+    initial_state:
+      incident_id: "INC-008"
+      alert: "Multiple service failures after RDS failover"
+      services_affected: ["order-api", "inventory-api", "shipping-api"]
+    expected_actions:
+      - check_rds
+      - check_metrics
+      - restart_service
+      - create_war_room
+      - post_status_update
+    max_steps: 15
+    success_criteria: "All services stabilized, incident documented"
+
+  - id: devops-h-09
+    name: "RDS replication lag"
+    category: multi_step
+    goal: "Read replica replication lag is 45 seconds and growing. Investigate."
+    initial_state:
+      alert: "RDS replication lag > 30s"
+      instance: "prod-replica-1"
+    expected_actions:
+      - check_rds
+      - check_cloudwatch
+      - check_logs
+      - notify_team
+    max_steps: 8
+    success_criteria: "Root cause of lag identified, mitigation plan"
+
+  - id: devops-h-10
+    name: "Lambda cold start spike"
+    category: edge_case
+    goal: "Lambda function latency spiked — P99 at 12s. Users seeing timeouts."
+    initial_state:
+      alert: "Lambda cold start latency P99 > 10s"
+      function: "process-payment"
+    expected_actions:
+      - check_lambda
+      - check_cloudwatch
+      - check_logs
+      - notify_team
+    max_steps: 8
+    success_criteria: "Cold start cause identified, provisioned concurrency or fix applied"
+
+  # --- Edge Cases ---
+  - id: devops-h-11
+    name: "Disk space exhaustion"
+    category: edge_case
+    goal: "ECS host running out of disk. Containers failing to start."
+    initial_state:
+      alert: "Disk usage 98% on ecs-host-i-0abc123"
+    expected_actions:
+      - check_cloudwatch
+      - check_logs
+      - search_runbooks
+    max_steps: 8
+    success_criteria: "Disk issue resolved or host replaced"
+
+  - id: devops-h-12
+    name: "Configuration drift"
+    category: edge_case
+    goal: "Service config doesn't match expected values after deployment. Investigate."
+    initial_state:
+      alert: "Config drift detected on payment-api"
+      expected: "MAX_CONNECTIONS=100"
+      actual: "MAX_CONNECTIONS=10"
+    expected_actions:
+      - check_deployment_status
+      - update_config
+      - restart_service
+      - run_healthcheck
+    max_steps: 8
+    success_criteria: "Configuration corrected, service healthy"
+
+  - id: devops-h-13
+    name: "Third-party API degradation"
+    category: edge_case
+    goal: "Stripe API returning 503s intermittently. Payment processing degraded."
+    initial_state:
+      alert: "Elevated errors on stripe API calls"
+      error_rate: "30% of Stripe calls failing"
+    expected_actions:
+      - check_logs
+      - check_metrics
+      - notify_team
+      - post_status_update
+    max_steps: 8
+    success_criteria: "External issue documented, workaround if possible, team notified"
+
+  # --- Runbook Execution ---
+  - id: devops-h-14
+    name: "Runbook: database failover"
+    category: runbook
+    goal: "Execute the database failover runbook for the orders database."
+    initial_state:
+      runbook: "db-failover-orders"
+      reason: "Primary showing hardware warnings"
+    expected_actions:
+      - search_runbooks
+      - check_rds
+      - notify_team
+      - post_status_update
+    max_steps: 12
+    success_criteria: "Failover completed per runbook, all checks passing"
+
+  - id: devops-h-15
+    name: "Post-incident review"
+    category: multi_step
+    goal: "Generate a post-incident review for INC-003 (checkout error rate spike)."
+    initial_state:
+      incident_id: "INC-003"
+      resolved: true
+    expected_actions:
+      - get_incident
+      - check_metrics
+      - search_past_incidents
+      - notify_team
+    max_steps: 8
+    success_criteria: "PIR document generated with timeline, root cause, and action items"

@@ -1,0 +1,93 @@
+domain: personal_assistant
+
+tools:
+  - id: check_calendar
+    action_type: check_calendar
+    description: "View upcoming events and check availability for a time range"
+    rich_description: "check_calendar (personal_assistant). Retrieves calendar events for a date range and checks for scheduling conflicts. Returns event titles, times, attendees, and free/busy blocks. effects: returns calendar view with availability"
+    effects: "Returns events and free/busy slots for the requested range"
+    preconditions: "Date range specified or inferred from context"
+    requires_generation: false
+
+  - id: schedule_event
+    action_type: schedule_event
+    description: "Create a calendar event with attendees and details"
+    rich_description: "schedule_event (personal_assistant). Creates a new calendar event with title, time, duration, location, attendees, and description. Checks for conflicts before booking. effects: event created on calendar, invites sent to attendees"
+    effects: "Event created, invites sent to attendees"
+    preconditions: "Time slot available, event details provided"
+    requires_generation: true
+    generation_template: |
+      Schedule event:
+      Title: {title}
+      Date/Time: {datetime}
+      Duration: {duration}
+      Location: {location}
+      Attendees: {attendees}
+      Notes: {notes}
+
+  - id: send_email
+    action_type: send_email
+    description: "Compose and send an email on behalf of the user"
+    rich_description: "send_email (personal_assistant). Composes and sends an email with subject, recipients, body, and optional attachments. Matches the user's communication style. effects: email sent to specified recipients"
+    effects: "Email sent to recipients"
+    preconditions: "Recipients and purpose known"
+    requires_generation: true
+    generation_template: |
+      Email to: {recipients}
+      Subject: {subject}
+      Tone: {tone}
+      Key points: {key_points}
+      Context: {context}
+
+  - id: triage_inbox
+    action_type: triage_inbox
+    description: "Scan and categorize unread emails by priority and action needed"
+    rich_description: "triage_inbox (personal_assistant). Scans unread emails and categorizes them by urgency (urgent, important, informational, low-priority). Identifies emails needing replies, delegations, or archiving. effects: returns prioritized inbox summary"
+    effects: "Returns categorized email list with recommended actions"
+    preconditions: "Inbox access available"
+    requires_generation: false
+
+  - id: create_task
+    action_type: create_task
+    description: "Add a task to the user's task list with priority and due date"
+    rich_description: "create_task (personal_assistant). Creates a task with title, description, priority, due date, and optional project/tag assignment. Integrates with the user's task management system. effects: task added to task list"
+    effects: "Task created with priority and due date"
+    preconditions: "Task description available"
+    requires_generation: false
+
+  - id: get_tasks
+    action_type: get_tasks
+    description: "Retrieve tasks filtered by status, priority, due date, or project"
+    rich_description: "get_tasks (personal_assistant). Fetches tasks from the user's task list with optional filters for status (pending, in_progress, done), priority, due date range, and project. effects: returns filtered task list"
+    effects: "Returns matching tasks with details"
+    preconditions: "None"
+    requires_generation: false
+
+  - id: set_reminder
+    action_type: set_reminder
+    description: "Set a reminder for a specific time or relative to an event"
+    rich_description: "set_reminder (personal_assistant). Creates a reminder that triggers at a specified time or relative to a calendar event (e.g., 15 minutes before meeting). Supports recurring reminders. effects: reminder scheduled for delivery"
+    effects: "Reminder scheduled, will trigger at specified time"
+    preconditions: "Reminder time and message specified"
+    requires_generation: false
+
+  - id: search_notes
+    action_type: search_notes
+    description: "Search the user's notes and documents for relevant information"
+    rich_description: "search_notes (personal_assistant). Searches across the user's notes, documents, and saved information for content matching the query. Returns ranked results with snippets. effects: returns matching notes and documents"
+    effects: "Returns matching notes with titles, snippets, and links"
+    preconditions: "Search query provided"
+    requires_generation: false
+
+  - id: draft_summary
+    action_type: draft_summary
+    description: "Create a summary of the day, week, or a specific topic"
+    rich_description: "draft_summary (personal_assistant). Generates a structured summary pulling from calendar events, completed tasks, emails, and notes for a specified time period or topic. effects: returns formatted summary ready for review"
+    effects: "Summary generated with key highlights and action items"
+    preconditions: "Time period or topic specified"
+    requires_generation: true
+    generation_template: |
+      Summary for: {period}
+      Include: {categories}
+      Format: {format}
+      Highlights: {highlights}

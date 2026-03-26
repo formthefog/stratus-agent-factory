@@ -1,0 +1,141 @@
+# DevOps Incident Response Agent — Tool Registry
+# 24 tools across 6 categories
+
+domain: devops_incident
+
+tools:
+  # --- Monitoring & Observability ---
+  - id: check_metrics
+    action_type: check_metrics
+    rich_description: "check_metrics (monitoring). Query Datadog metrics for a service — CPU, memory, error rate, latency, throughput. Accepts service name, metric names, and time range. effects: returns metric values with timestamps and trend direction"
+    requires_generation: false
+
+  - id: check_logs
+    action_type: check_logs
+    rich_description: "check_logs (monitoring). Query Datadog logs with filters — service, severity, time range, pattern match. Returns structured log entries sorted by timestamp. effects: returns matching log entries with count and severity breakdown"
+    requires_generation: false
+
+  - id: check_apm
+    action_type: check_apm
+    rich_description: "check_apm (monitoring). Query Datadog APM traces for a service to identify slow endpoints, error traces, and dependency bottlenecks. effects: returns trace data with latency breakdown per span"
+    requires_generation: false
+
+  - id: get_dashboard
+    action_type: get_dashboard
+    rich_description: "get_dashboard (monitoring). Get a Datadog dashboard snapshot showing current service health at a glance. effects: returns dashboard URL and key metric summary"
+    requires_generation: false
+
+  # --- Incident Management ---
+  - id: acknowledge_incident
+    action_type: acknowledge_incident
+    rich_description: "acknowledge_incident (incident). Acknowledge a PagerDuty incident to stop escalation timer. Requires incident ID. effects: incident status changes to acknowledged, escalation paused"
+    requires_generation: false
+
+  - id: resolve_incident
+    action_type: resolve_incident
+    rich_description: "resolve_incident (incident). Resolve a PagerDuty incident with resolution notes. effects: incident status changes to resolved, timeline updated"
+    requires_generation: true
+    generation_template: "Incident: {incident_id}\nResolution: {resolution_notes}\nRoot Cause: {root_cause}"
+
+  - id: escalate_incident
+    action_type: escalate_incident
+    rich_description: "escalate_incident (incident). Escalate a PagerDuty incident to the next responder or specific team. Includes context gathered so far. effects: incident escalated, next responder paged with context"
+    requires_generation: true
+    generation_template: "Incident: {incident_id}\nEscalate To: {target}\nContext: {investigation_summary}"
+
+  - id: add_incident_note
+    action_type: add_incident_note
+    rich_description: "add_incident_note (incident). Add a timestamped note to the PagerDuty incident timeline documenting investigation progress. effects: note added to incident timeline"
+    requires_generation: true
+    generation_template: "Incident: {incident_id}\nNote: {content}"
+
+  - id: get_incident
+    action_type: get_incident
+    rich_description: "get_incident (incident). Get full PagerDuty incident details including status, timeline, assigned responders, and related alerts. effects: returns incident record"
+    requires_generation: false
+
+  # --- Infrastructure Actions ---
+  - id: restart_service
+    action_type: restart_service
+    rich_description: "restart_service (infrastructure). Restart an ECS service or EC2 instance. Forces new task deployment for ECS or stop/start for EC2. effects: service restarted, new tasks launched, connections reset"
+    requires_generation: false
+
+  - id: scale_service
+    action_type: scale_service
+    rich_description: "scale_service (infrastructure). Scale an ECS service desired count or ASG min/max/desired. effects: replica count adjusted, new instances launching"
+    requires_generation: false
+
+  - id: rollback_deployment
+    action_type: rollback_deployment
+    rich_description: "rollback_deployment (infrastructure). Trigger rollback to previous deployment version via GitHub deployments API. effects: previous version deployed, current version replaced"
+    requires_generation: false
+
+  - id: update_config
+    action_type: update_config
+    rich_description: "update_config (infrastructure). Update service configuration via AWS Parameter Store or Secrets Manager. May require service restart to take effect. effects: configuration value updated"
+    requires_generation: false
+
+  - id: run_healthcheck
+    action_type: run_healthcheck
+    rich_description: "run_healthcheck (infrastructure). Execute health checks against all service endpoints — HTTP, TCP, and dependency checks. effects: returns per-endpoint health status and response times"
+    requires_generation: false
+
+  - id: check_deployment_status
+    action_type: check_deployment_status
+    rich_description: "check_deployment_status (infrastructure). Check current deployment version, health, uptime, and whether a rollback target exists. effects: returns deployment info with version and health"
+    requires_generation: false
+
+  # --- AWS-Specific ---
+  - id: check_rds
+    action_type: check_rds
+    rich_description: "check_rds (aws). Check RDS instance status — connections, CPU, storage, replication lag, recent slow queries. effects: returns database health metrics"
+    requires_generation: false
+
+  - id: check_cloudwatch
+    action_type: check_cloudwatch
+    rich_description: "check_cloudwatch (aws). Query CloudWatch alarms and metrics for a service or resource. effects: returns alarm states and metric data points"
+    requires_generation: false
+
+  - id: check_lambda
+    action_type: check_lambda
+    rich_description: "check_lambda (aws). Check Lambda function invocation metrics — errors, throttles, duration, cold starts. effects: returns function execution metrics"
+    requires_generation: false
+
+  - id: modify_security_group
+    action_type: modify_security_group
+    rich_description: "modify_security_group (aws). Add or remove security group rules for network access control. Use with caution. effects: network access rules updated immediately"
+    requires_generation: false
+
+  # --- Communication ---
+  - id: notify_team
+    action_type: notify_team
+    rich_description: "notify_team (communication). Post a message to a Slack channel with incident context, severity, and current status. effects: message posted to specified channel"
+    requires_generation: true
+    generation_template: "Channel: {channel}\nSeverity: {severity}\nMessage: {message}"
+
+  - id: create_war_room
+    action_type: create_war_room
+    rich_description: "create_war_room (communication). Create a dedicated Slack channel for incident coordination and invite all responders. effects: channel created, responders invited, incident linked"
+    requires_generation: false
+
+  - id: post_status_update
+    action_type: post_status_update
+    rich_description: "post_status_update (communication). Post a formatted status update with severity badge, current status, ETA, and action items. effects: status update posted to incident channel and status page"
+    requires_generation: true
+    generation_template: "Severity: {severity}\nStatus: {status}\nETA: {eta}\nSummary: {summary}"
+
+  # --- Knowledge ---
+  - id: search_runbooks
+    action_type: search_runbooks
+    rich_description: "search_runbooks (knowledge). Search the runbook database for procedures matching a symptom, service, or error pattern. effects: returns matching runbooks ranked by relevance"
+    requires_generation: false
+
+  - id: search_past_incidents
+    action_type: search_past_incidents
+    rich_description: "search_past_incidents (knowledge). Search past incident records for similar issues based on service, symptoms, or error patterns. effects: returns similar past incidents with their resolutions"
+    requires_generation: false
+
+  - id: get_service_owners
+    action_type: get_service_owners
+    rich_description: "get_service_owners (knowledge). Look up service ownership, responsible team, escalation contacts, and on-call schedule. effects: returns team and contact information"
+    requires_generation: false

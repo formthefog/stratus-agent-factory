@@ -1,0 +1,4 @@
+name: Sales Pipeline
+domain: sales_pipeline
+description: Agent for managing deals through qualification, nurturing, and closing
+training_domains: [sales_pipeline, email_management, scheduling]

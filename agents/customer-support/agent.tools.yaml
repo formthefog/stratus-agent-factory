@@ -1,0 +1,132 @@
+# Customer Support Agent — Tool Registry
+# 22 tools across 5 categories
+
+domain: customer_support
+
+tools:
+  # --- Customer & Account ---
+  - id: get_customer
+    action_type: get_customer
+    rich_description: "get_customer (account). Look up customer account — plan type, subscription status, usage metrics, feature flags, signup date. effects: returns full account details"
+    requires_generation: false
+
+  - id: get_customer_history
+    action_type: get_customer_history
+    rich_description: "get_customer_history (account). Get customer's complete interaction history — past tickets, resolutions, satisfaction scores, escalations. effects: returns interaction timeline"
+    requires_generation: false
+
+  - id: check_account_health
+    action_type: check_account_health
+    rich_description: "check_account_health (account). Check customer's account for health indicators — recent errors, usage anomalies, disabled features, pending migrations. effects: returns account health report"
+    requires_generation: false
+
+  - id: update_customer
+    action_type: update_customer
+    rich_description: "update_customer (account). Update customer record — tags, notes, tier, preferences. effects: customer record updated"
+    requires_generation: false
+
+  # --- Ticket Management ---
+  - id: get_ticket
+    action_type: get_ticket
+    rich_description: "get_ticket (ticket). Get full ticket details — messages, status, priority, tags, assignee, created date. effects: returns complete ticket record"
+    requires_generation: false
+
+  - id: update_ticket
+    action_type: update_ticket
+    rich_description: "update_ticket (ticket). Update ticket metadata — status, priority, tags, internal notes, assignee. effects: ticket record updated"
+    requires_generation: false
+
+  - id: reply_to_ticket
+    action_type: reply_to_ticket
+    rich_description: "reply_to_ticket (ticket). Send a customer-facing reply on the ticket. Should be empathetic, clear, and actionable. effects: reply posted, customer notified via email"
+    requires_generation: true
+    generation_template: "Ticket: {ticket_id}\nCustomer: {customer_name}\nIssue: {issue_summary}\nReply: {message}"
+
+  - id: create_ticket
+    action_type: create_ticket
+    rich_description: "create_ticket (ticket). Create a new support ticket with subject, description, priority, and customer link. effects: ticket created with unique ID"
+    requires_generation: false
+
+  - id: close_ticket
+    action_type: close_ticket
+    rich_description: "close_ticket (ticket). Close a ticket with resolution summary. Triggers customer satisfaction survey. effects: ticket status set to closed, survey sent"
+    requires_generation: true
+    generation_template: "Ticket: {ticket_id}\nResolution: {resolution_summary}"
+
+  - id: escalate_ticket
+    action_type: escalate_ticket
+    rich_description: "escalate_ticket (ticket). Escalate ticket to specialist team with full investigation context — what was checked, what was found, what was tried. effects: ticket reassigned with context, specialist notified"
+    requires_generation: true
+    generation_template: "Ticket: {ticket_id}\nEscalate To: {team}\nInvestigation: {context}\nCustomer Impact: {impact}"
+
+  # --- Knowledge & Diagnosis ---
+  - id: search_knowledge_base
+    action_type: search_knowledge_base
+    rich_description: "search_knowledge_base (knowledge). Search product documentation, FAQs, how-to guides, and help articles by topic or keyword. effects: returns matching articles ranked by relevance"
+    requires_generation: false
+
+  - id: search_known_issues
+    action_type: search_known_issues
+    rich_description: "search_known_issues (knowledge). Search known issues database for matching bugs with status and available fixes. effects: returns matching known issues with fix procedures"
+    requires_generation: false
+
+  - id: apply_fix
+    action_type: apply_fix
+    rich_description: "apply_fix (knowledge). Apply a known fix to the customer's account — clear cache, rebuild index, reset flag, re-sync data. effects: fix applied, issue should be resolved"
+    requires_generation: false
+
+  - id: check_service_status
+    action_type: check_service_status
+    rich_description: "check_service_status (knowledge). Check current service status page — active incidents, degraded services, scheduled maintenance. effects: returns service status with incident details"
+    requires_generation: false
+
+  # --- Billing ---
+  - id: get_billing_history
+    action_type: get_billing_history
+    rich_description: "get_billing_history (billing). Get customer billing history — invoices, charges, credits, payment methods, plan changes. effects: returns billing records sorted by date"
+    requires_generation: false
+
+  - id: get_plan_details
+    action_type: get_plan_details
+    rich_description: "get_plan_details (billing). Get plan comparison — pricing, features, limits for all available plans. effects: returns plan details for comparison"
+    requires_generation: false
+
+  - id: apply_credit
+    action_type: apply_credit
+    rich_description: "apply_credit (billing). Apply a credit or refund to the customer's account with reason code. effects: credit applied, reflected on next invoice"
+    requires_generation: false
+
+  - id: change_plan
+    action_type: change_plan
+    rich_description: "change_plan (billing). Upgrade or downgrade the customer's subscription plan. Handles proration automatically. effects: plan changed, prorated billing applied"
+    requires_generation: false
+
+  # --- Product Feedback ---
+  - id: search_feature_requests
+    action_type: search_feature_requests
+    rich_description: "search_feature_requests (feedback). Search existing feature requests by keyword or category. Returns request with vote count and status. effects: returns matching feature requests"
+    requires_generation: false
+
+  - id: create_feature_request
+    action_type: create_feature_request
+    rich_description: "create_feature_request (feedback). Create a new feature request with the customer's description and use case. Automatically adds their vote. effects: request created, vote recorded"
+    requires_generation: true
+    generation_template: "Title: {title}\nDescription: {description}\nUse Case: {use_case}\nCustomer: {customer}"
+
+  - id: upvote_feature_request
+    action_type: upvote_feature_request
+    rich_description: "upvote_feature_request (feedback). Add the customer's vote to an existing feature request. effects: vote count incremented, customer linked"
+    requires_generation: false
+
+  # --- Communication ---
+  - id: send_email
+    action_type: send_email
+    rich_description: "send_email (communication). Send an email to the customer outside of the ticket system for proactive outreach or follow-ups. effects: email delivered"
+    requires_generation: true
+    generation_template: "To: {recipient}\nSubject: {subject}\nBody: {body}"
+
+  - id: notify_slack
+    action_type: notify_slack
+    rich_description: "notify_slack (communication). Post to internal Slack channel for escalation, team awareness, or cross-functional coordination. effects: message posted to channel"
+    requires_generation: true
+    generation_template: "Channel: {channel}\nMessage: {message}"

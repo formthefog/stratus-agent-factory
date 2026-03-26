@@ -1,0 +1,89 @@
+domain: devops_incident
+
+scenarios:
+  # Happy paths
+  - name: "Service outage — simple restart fixes"
+    category: happy_path
+    goal: "The API service is down, fix it"
+    expected_sequence: [get_active_alerts, check_logs, restart_service, run_healthcheck, notify_team]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "High error rate — rollback needed"
+    category: happy_path
+    goal: "Error rate spiked to 40% on the payment service after the last deploy"
+    expected_sequence: [get_active_alerts, check_metrics, check_logs, rollback_deployment, run_healthcheck]
+    expected_outcome: success
+    max_steps: 8
+
+  - name: "Memory leak — restart and monitor"
+    category: happy_path
+    goal: "The user service is consuming 95% memory and responding slowly"
+    expected_sequence: [check_metrics, check_logs, restart_service, run_healthcheck, notify_team]
+    expected_outcome: success
+    max_steps: 8
+
+  # Multi-step
+  - name: "Cascading failure across services"
+    category: multi_step
+    goal: "Multiple services are alerting, database seems slow"
+    expected_sequence: [get_active_alerts, check_metrics, check_logs, check_metrics, restart_service, run_healthcheck, notify_team, update_incident_status]
+    expected_outcome: success
+    max_steps: 15
+
+  - name: "Full incident lifecycle"
+    category: multi_step
+    goal: "There's a P1 incident, handle it end to end"
+    expected_sequence: [get_active_alerts, notify_team, check_logs, check_metrics, restart_service, run_healthcheck, update_incident_status, write_postmortem]
+    expected_outcome: success
+    max_steps: 15
+
+  # Edge cases
+  - name: "No alerts but user reports issues"
+    category: edge_case
+    goal: "Users are complaining about slow responses but no alerts are firing"
+    expected_sequence: [get_active_alerts, check_metrics, check_logs]
+    expected_outcome: success
+    max_steps: 10
+
+  - name: "Scaling event during deploy freeze"
+    category: edge_case
+    goal: "Traffic is 3x normal, need more capacity, but we're in a deploy freeze"
+    expected_sequence: [check_metrics, scale_service, run_healthcheck]
+    expected_outcome: success
+    max_steps: 8
+
+  # Failure scenarios
+  - name: "Restart doesn't fix the issue"
+    category: failure
+    goal: "Auth service is returning 500s"
+    expected_sequence: [get_active_alerts, check_logs, restart_service, run_healthcheck, check_logs, rollback_deployment]
+    expected_outcome: success
+    max_steps: 12
+    simulated_responses:
+      restart_service: {success: true, output: "Restarted"}
+      run_healthcheck: {success: false, output: "Still returning 500s"}
+
+  - name: "Monitoring system is unreachable"
+    category: failure
+    goal: "Check on the API service health"
+    expected_sequence: [get_active_alerts]
+    expected_outcome: graceful_failure
+    max_steps: 5
+    simulated_responses:
+      get_active_alerts: {success: false, output: "Connection refused: monitoring service unreachable"}
+
+  # Ambiguous
+  - name: "Vague report from stakeholder"
+    category: ambiguous
+    goal: "Something seems wrong with the website"
+    expected_sequence: [get_active_alerts, check_metrics, run_healthcheck]
+    expected_outcome: success
+    max_steps: 10
+
+  - name: "Multiple possible causes"
+    category: ambiguous
+    goal: "Latency is up 200% — could be the new deploy, could be the DB migration, could be traffic"
+    expected_sequence: [check_metrics, check_logs, get_active_alerts]
+    expected_outcome: success
+    max_steps: 12

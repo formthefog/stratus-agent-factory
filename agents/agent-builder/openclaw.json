@@ -1,0 +1,39 @@
+{
+  "id": "agent-builder",
+  "name": "Agent Builder",
+  "brain": "stratus",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250514",
+  "stratus": {
+    "probe": "planning-v2",
+    "maxSteps": 50,
+    "goalProximityThreshold": 0.90,
+    "observationEncoder": "llm_bridge",
+    "toolEmbeddingCache": true,
+    "treeSearch": {
+      "enabled": true,
+      "maxDepth": 4,
+      "beamWidth": 5,
+      "ambiguityThreshold": 0.12,
+      "timeBudgetMs": 750
+    },
+    "recovery": {
+      "maxRollbackDepth": 3,
+      "maxRecoveryAttempts": 5,
+      "detectFailures": true
+    },
+    "observability": {
+      "traceEnabled": true,
+      "traceDir": ".stratus/traces",
+      "profileEnabled": true,
+      "trajectoryEnabled": true,
+      "trajectoryDir": ".stratus/trajectories"
+    }
+  },
+  "persona": {
+    "agents_md": "AGENTS.md",
+    "soul_md": "SOUL.md"
+  },
+  "tools": "agent.tools.yaml",
+  "probe_config": "probe_config.yaml"
+}

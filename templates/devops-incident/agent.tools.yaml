@@ -1,0 +1,101 @@
+domain: devops_incident
+
+tools:
+  - id: get_active_alerts
+    action_type: get_active_alerts
+    description: "Fetch currently firing alerts from monitoring system"
+    rich_description: "get_active_alerts (devops_incident). Retrieves all active alerts from PagerDuty/Datadog/Grafana with severity, service, and timestamp. effects: returns list of active alerts with severity levels and affected services"
+    effects: "Returns active alerts with severity, service name, started_at, description"
+    preconditions: "Monitoring integration configured"
+    requires_generation: false
+
+  - id: check_logs
+    action_type: check_logs
+    description: "Query logs for a specific service within a time range"
+    rich_description: "check_logs (devops_incident). Queries centralized logging (ELK/Datadog/CloudWatch) for a specific service, filtering by severity and time window. effects: returns matching log entries to help diagnose the root cause"
+    effects: "Returns log entries matching the query with timestamps and severity"
+    preconditions: "Service name and approximate time of incident known"
+    requires_generation: true
+    generation_template: |
+      Query logs for service "{service_name}" in the last {time_window}.
+      Filter by severity: {severity_filter}.
+      Search for: {search_pattern}.
+
+  - id: check_metrics
+    action_type: check_metrics
+    description: "Retrieve service metrics (CPU, memory, latency, error rate)"
+    rich_description: "check_metrics (devops_incident). Fetches time-series metrics for a service including CPU, memory, request latency, error rate, and throughput. effects: returns metric data to identify performance anomalies"
+    effects: "Returns time-series metrics for the specified service and time range"
+    preconditions: "Service name known"
+    requires_generation: false
+
+  - id: restart_service
+    action_type: restart_service
+    description: "Restart a service instance or deployment"
+    rich_description: "restart_service (devops_incident). Performs a rolling restart of a service deployment in Kubernetes/ECS/Docker. effects: restarts service instances which clears transient state and reloads configuration"
+    effects: "Service instances are restarted, clearing transient state and reloading config"
+    preconditions: "Service identified as needing restart, not in deploy-freeze"
+    requires_generation: false
+
+  - id: rollback_deployment
+    action_type: rollback_deployment
+    description: "Roll back to the previous known-good deployment"
+    rich_description: "rollback_deployment (devops_incident). Reverts a service to its previous deployment version in the CD pipeline. effects: restores the previous version which reverts any code or config changes from the bad deployment"
+    effects: "Service reverted to previous version, bad deployment replaced"
+    preconditions: "Recent deployment identified as cause, previous version available"
+    requires_generation: false
+
+  - id: scale_service
+    action_type: scale_service
+    description: "Scale service instances up or down"
+    rich_description: "scale_service (devops_incident). Adjusts the replica count for a service to handle load changes or recover from capacity issues. effects: changes the number of running instances which affects throughput and resource usage"
+    effects: "Service replica count adjusted, capacity changed"
+    preconditions: "Service identified, scaling limits configured"
+    requires_generation: false
+
+  - id: run_healthcheck
+    action_type: run_healthcheck
+    description: "Run health checks against a service endpoint"
+    rich_description: "run_healthcheck (devops_incident). Executes health check requests against service endpoints to verify availability, response time, and correctness. effects: returns health status with latency and any error details"
+    effects: "Returns health status (healthy/degraded/down) with response latency"
+    preconditions: "Service endpoint known"
+    requires_generation: false
+
+  - id: notify_team
+    action_type: notify_team
+    description: "Send incident notification to the on-call team"
+    rich_description: "notify_team (devops_incident). Sends an incident notification to Slack/PagerDuty/email with severity, affected services, current status, and actions taken. effects: team is alerted and can coordinate response"
+    effects: "Notification sent to on-call channel with incident details"
+    preconditions: "Incident severity assessed"
+    requires_generation: true
+    generation_template: |
+      Compose incident notification:
+      Severity: {severity}
+      Affected service: {service_name}
+      Status: {current_status}
+      Actions taken: {actions_summary}
+      Next steps: {next_steps}
+
+  - id: update_incident_status
+    action_type: update_incident_status
+    description: "Update the incident status in the incident management system"
+    rich_description: "update_incident_status (devops_incident). Updates the incident record with current status, timeline entries, and resolution progress. effects: incident record is updated for tracking and post-mortem"
+    effects: "Incident status updated (investigating/identified/monitoring/resolved)"
+    preconditions: "Incident record exists"
+    requires_generation: false
+
+  - id: write_postmortem
+    action_type: write_postmortem
+    description: "Generate a post-incident review document"
+    rich_description: "write_postmortem (devops_incident). Generates a structured post-mortem document from the incident timeline, including root cause, impact, timeline of events, actions taken, and follow-up items. effects: creates a post-mortem document for the team to review"
+    effects: "Post-mortem document created with timeline, root cause, and action items"
+    preconditions: "Incident resolved"
+    requires_generation: true
+    generation_template: |
+      Write post-mortem for incident:
+      Title: {incident_title}
+      Duration: {start_time} to {end_time}
+      Impact: {impact_summary}
+      Root cause: {root_cause}
+      Timeline: {timeline_events}
+      Action items: {followup_items}

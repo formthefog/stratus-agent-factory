@@ -1,0 +1,238 @@
+# Sales Pipeline Agent — Test Scenarios
+# 15 scenarios covering the full sales lifecycle
+
+scenarios:
+  # --- Lead Qualification ---
+  - id: sales-h-01
+    name: "Qualify warm inbound lead"
+    category: happy_path
+    goal: "New inbound lead from TechStart Inc. Research and qualify them."
+    initial_state:
+      contact: "Sarah Chen, VP Product at TechStart Inc"
+      source: "Demo request form"
+    expected_actions:
+      - get_contact
+      - research_company
+      - research_contact
+      - check_signals
+      - update_contact
+    max_steps: 6
+    success_criteria: "Lead scored using BANT, qualification recorded in CRM"
+
+  - id: sales-h-02
+    name: "Disqualify poor-fit lead"
+    category: edge_case
+    goal: "Research new lead from SmallCo (3 employees, no funding). Qualify or disqualify."
+    initial_state:
+      contact: "Mike Johnson, Founder at SmallCo"
+      source: "Cold inbound"
+    expected_actions:
+      - research_company
+      - research_contact
+      - update_contact
+    max_steps: 5
+    success_criteria: "Lead disqualified with reasoning logged"
+
+  # --- Deal Progression ---
+  - id: sales-h-03
+    name: "Progress deal from demo to proposal"
+    category: happy_path
+    goal: "Acme Corp had a great demo yesterday. Move to proposal stage and send follow-up."
+    initial_state:
+      deal: "Acme Corp Enterprise"
+      stage: "Demo"
+      last_meeting: "Demo completed, champion excited, asked about pricing"
+    expected_actions:
+      - get_deal
+      - get_contact
+      - update_deal
+      - draft_email
+      - send_email
+    max_steps: 7
+    success_criteria: "Deal updated to Proposal, follow-up email sent with next steps"
+
+  - id: sales-h-04
+    name: "Draft and send post-meeting follow-up"
+    category: happy_path
+    goal: "Had a call with John at BigCorp about integration needs. Draft follow-up."
+    initial_state:
+      contact: "John Smith, VP Engineering"
+      meeting_notes: "Discussed API integration, timeline Q2, budget ~$50k"
+    expected_actions:
+      - get_contact
+      - get_deal
+      - search_emails
+      - draft_email
+      - send_email
+      - add_activity
+    max_steps: 7
+    success_criteria: "Personalized follow-up sent referencing meeting specifics"
+
+  # --- Meeting Scheduling ---
+  - id: sales-h-05
+    name: "Schedule follow-up meeting"
+    category: happy_path
+    goal: "Schedule a 30-min follow-up call with Sarah at TechStart for next week."
+    initial_state:
+      contact: "Sarah Chen"
+      purpose: "Follow-up on proposal"
+    expected_actions:
+      - get_contact
+      - check_calendar
+      - schedule_meeting
+    max_steps: 5
+    success_criteria: "Meeting scheduled with both parties"
+
+  # --- Stale Deal Management ---
+  - id: sales-h-06
+    name: "Re-engage stale deals"
+    category: multi_step
+    goal: "Find all deals with no activity in 14+ days and draft follow-ups."
+    initial_state:
+      pipeline: "Multiple deals across stages"
+    expected_actions:
+      - search_deals
+      - get_deal
+      - search_emails
+      - draft_email
+    max_steps: 8
+    success_criteria: "Stale deals identified, personalized re-engagement emails drafted"
+
+  # --- Research ---
+  - id: sales-h-07
+    name: "Pre-call research"
+    category: happy_path
+    goal: "Prepare a briefing for tomorrow's call with Lisa at GrowthCo."
+    initial_state:
+      contact: "Lisa Park, CTO at GrowthCo"
+      meeting: "First discovery call"
+    expected_actions:
+      - get_contact
+      - research_company
+      - research_contact
+      - check_signals
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Briefing generated with company info, contact insights, and talking points"
+
+  # --- CRM Operations ---
+  - id: sales-h-08
+    name: "Update deal after successful demo"
+    category: happy_path
+    goal: "Demo with MidCo went well. Update deal, log notes, create follow-up tasks."
+    initial_state:
+      deal: "MidCo Pro Plan"
+      demo_outcome: "Positive, asked about implementation timeline"
+    expected_actions:
+      - get_deal
+      - update_deal
+      - add_activity
+      - create_task
+    max_steps: 6
+    success_criteria: "Deal updated, demo logged, follow-up task created"
+
+  - id: sales-h-09
+    name: "Generate pipeline report"
+    category: happy_path
+    goal: "Generate a pipeline summary for the weekly team standup."
+    initial_state:
+      request: "Weekly pipeline report"
+    expected_actions:
+      - get_pipeline_metrics
+      - search_deals
+      - draft_summary
+    max_steps: 4
+    success_criteria: "Report generated with pipeline value, stage breakdown, stale deals"
+
+  # --- Complex Scenarios ---
+  - id: sales-h-10
+    name: "Handle 'not interested' gracefully"
+    category: edge_case
+    goal: "Prospect replied 'we went with a competitor.' Handle gracefully."
+    initial_state:
+      deal: "LostCo Enterprise"
+      stage: "Negotiation"
+      response: "We've decided to go with CompetitorX"
+    expected_actions:
+      - get_deal
+      - update_deal
+      - draft_email
+      - send_email
+      - add_activity
+    max_steps: 6
+    success_criteria: "Deal closed-lost with reason, graceful email sent, competitor logged"
+
+  - id: sales-h-11
+    name: "Multi-thread a deal"
+    category: multi_step
+    goal: "Current champion at EntCo loves us but can't sign. Find and engage the economic buyer."
+    initial_state:
+      deal: "EntCo Platform"
+      champion: "DevLead, no budget authority"
+    expected_actions:
+      - get_deal
+      - get_contact
+      - research_company
+      - search_contacts
+      - draft_email
+    max_steps: 8
+    success_criteria: "Economic buyer identified, outreach drafted"
+
+  - id: sales-h-12
+    name: "Log meeting notes and create tasks"
+    category: happy_path
+    goal: "Just finished call with Acme. Log notes: they want a POC next week, need security docs."
+    initial_state:
+      contact: "John at Acme Corp"
+      notes: "Wants POC next week, needs security documentation, budget approved"
+    expected_actions:
+      - add_activity
+      - create_task
+      - update_deal
+    max_steps: 5
+    success_criteria: "Notes logged, POC task created, security docs task created"
+
+  - id: sales-h-13
+    name: "Prioritize two competing deals"
+    category: multi_step
+    goal: "Limited bandwidth this week. Compare Deal A ($30k, stale 10 days) vs Deal B ($80k, active). Recommend priority."
+    initial_state:
+      deal_a: "SmallDeal ($30k, Proposal stage, 10 days stale)"
+      deal_b: "BigDeal ($80k, Demo stage, active)"
+    expected_actions:
+      - get_deal
+      - get_deal
+      - draft_summary
+    max_steps: 5
+    success_criteria: "Priority recommendation with reasoning"
+
+  - id: sales-h-14
+    name: "Draft proposal email"
+    category: multi_step
+    goal: "Draft a proposal email to DataFlow Inc with our Pro plan pricing ($99/user/mo)."
+    initial_state:
+      deal: "DataFlow Inc"
+      stage: "Demo complete"
+      pricing: "Pro plan, $99/user/month"
+    expected_actions:
+      - get_deal
+      - get_contact
+      - search_emails
+      - draft_email
+    max_steps: 6
+    success_criteria: "Proposal email drafted with personalized value prop and pricing"
+
+  - id: sales-h-15
+    name: "End-of-quarter pipeline cleanup"
+    category: complex
+    goal: "End of Q1. Clean up pipeline — close lost stale deals, update forecasts, identify at-risk deals."
+    initial_state:
+      context: "March 31, end of Q1"
+    expected_actions:
+      - search_deals
+      - get_pipeline_metrics
+      - update_deal
+      - draft_summary
+      - notify_slack
+    max_steps: 10
+    success_criteria: "Pipeline cleaned, forecast updated, at-risk deals flagged"

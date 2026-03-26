@@ -1,0 +1,79 @@
+domain: customer_support
+
+tools:
+  - id: search_knowledge_base
+    action_type: search_knowledge_base
+    description: "Search the help center and knowledge base for relevant articles"
+    rich_description: "search_knowledge_base (customer_support). Searches the knowledge base and help center for articles matching the customer's issue. Returns ranked results with relevance scores. effects: returns matching articles that may resolve the customer's question"
+    effects: "Returns relevant help articles with titles, snippets, and URLs"
+    preconditions: "Customer issue understood"
+    requires_generation: false
+
+  - id: create_ticket
+    action_type: create_ticket
+    description: "Create a support ticket for tracking and resolution"
+    rich_description: "create_ticket (customer_support). Creates a support ticket in the ticketing system with priority, category, description, and customer details. effects: ticket created for tracking with unique ID assigned"
+    effects: "Ticket created with ID, assigned to appropriate queue"
+    preconditions: "Customer issue identified, cannot be resolved immediately"
+    requires_generation: true
+    generation_template: |
+      Create ticket:
+      Customer: {customer_name} ({customer_email})
+      Category: {category}
+      Priority: {priority}
+      Summary: {issue_summary}
+      Steps to reproduce: {steps}
+
+  - id: send_response
+    action_type: send_response
+    description: "Send a response to the customer with solution or update"
+    rich_description: "send_response (customer_support). Composes and sends a customer-facing response with empathy, clear explanation, solution steps, and next actions. effects: customer receives response advancing toward resolution"
+    effects: "Response sent to customer via their preferred channel"
+    preconditions: "Solution or update available"
+    requires_generation: true
+    generation_template: |
+      Respond to {customer_name}:
+      Issue: {issue_summary}
+      Solution: {solution_steps}
+      Tone: empathetic, clear, helpful
+      Include: {additional_info}
+
+  - id: escalate
+    action_type: escalate
+    description: "Escalate a ticket to a higher tier or specialized team"
+    rich_description: "escalate (customer_support). Escalates a support ticket to tier 2/3 or a specialized team with full context, troubleshooting already attempted, and urgency level. effects: ticket reassigned to specialized team with full history"
+    effects: "Ticket escalated with context preserved, new team notified"
+    preconditions: "Standard troubleshooting exhausted, issue beyond current tier"
+    requires_generation: false
+
+  - id: update_ticket_status
+    action_type: update_ticket_status
+    description: "Update a ticket's status or add internal notes"
+    rich_description: "update_ticket_status (customer_support). Updates ticket status (open, pending, waiting_on_customer, resolved, closed) and adds internal notes for the team. effects: ticket status updated for tracking and SLA compliance"
+    effects: "Ticket status changed, internal notes added"
+    preconditions: "Ticket exists"
+    requires_generation: false
+
+  - id: get_customer_info
+    action_type: get_customer_info
+    description: "Retrieve customer account details and history"
+    rich_description: "get_customer_info (customer_support). Fetches customer profile, subscription plan, recent tickets, and interaction history. effects: returns customer context for personalized support"
+    effects: "Returns customer profile, plan, ticket history, and account status"
+    preconditions: "Customer identifier available (email, ID, name)"
+    requires_generation: false
+
+  - id: check_known_issues
+    action_type: check_known_issues
+    description: "Check for known issues or active incidents affecting the customer"
+    rich_description: "check_known_issues (customer_support). Checks the known issues board and active incidents for anything matching the customer's symptoms. effects: returns matching known issues with status and workarounds"
+    effects: "Returns matching known issues with ETA and workarounds"
+    preconditions: "Customer symptoms described"
+    requires_generation: false
+
+  - id: apply_fix
+    action_type: apply_fix
+    description: "Apply a standard fix or configuration change to the customer's account"
+    rich_description: "apply_fix (customer_support). Applies a known fix action to the customer's account such as resetting a setting, clearing a cache, or toggling a feature flag. effects: fix applied to customer account resolving the issue"
+    effects: "Fix applied to account, issue should be resolved"
+    preconditions: "Fix identified and approved for customer-facing application"
+    requires_generation: false

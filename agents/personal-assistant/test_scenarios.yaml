@@ -1,0 +1,220 @@
+# Personal Productivity Agent — Test Scenarios
+# 15 scenarios covering daily productivity workflows
+
+scenarios:
+  # --- Scheduling ---
+  - id: pa-h-01
+    name: "Schedule a meeting"
+    category: happy_path
+    goal: "Schedule a 30-min meeting with Sarah tomorrow afternoon."
+    initial_state:
+      contact: "Sarah Chen"
+      preference: "afternoon"
+    expected_actions:
+      - check_calendar
+      - schedule_event
+    max_steps: 4
+    success_criteria: "Meeting scheduled in free afternoon slot with agenda"
+
+  - id: pa-h-06
+    name: "Reschedule conflicting meetings"
+    category: multi_step
+    goal: "I have two meetings at 2pm tomorrow. Reschedule the less important one."
+    initial_state:
+      conflicts:
+        - "2pm: Team standup (recurring)"
+        - "2pm: Client call (one-time)"
+    expected_actions:
+      - get_agenda
+      - check_calendar
+      - reschedule_event
+    max_steps: 6
+    success_criteria: "Conflict resolved, one meeting moved, attendees notified"
+
+  - id: pa-h-11
+    name: "Handle double-booked calendar"
+    category: edge_case
+    goal: "My Wednesday is triple-booked from 1-3pm. Fix it."
+    initial_state:
+      day: "Wednesday"
+      conflicts: "3 overlapping meetings 1-3pm"
+    expected_actions:
+      - get_agenda
+      - check_calendar
+      - reschedule_event
+    max_steps: 8
+    success_criteria: "All conflicts resolved with minimal disruption"
+
+  # --- Email ---
+  - id: pa-h-02
+    name: "Morning inbox triage"
+    category: happy_path
+    goal: "Triage my inbox and tell me what needs attention."
+    initial_state:
+      inbox: "23 unread emails"
+    expected_actions:
+      - triage_inbox
+      - draft_summary
+    max_steps: 4
+    success_criteria: "Emails categorized, top priorities summarized"
+
+  - id: pa-h-04
+    name: "Draft and send follow-up email"
+    category: happy_path
+    goal: "Draft a follow-up to John about the project deadline we discussed yesterday."
+    initial_state:
+      contact: "John"
+      context: "Discussed project deadline, agreed on March 31"
+    expected_actions:
+      - search_emails
+      - search_notes
+      - draft_email
+      - send_email
+    max_steps: 5
+    success_criteria: "Personalized follow-up sent referencing yesterday's discussion"
+
+  - id: pa-h-08
+    name: "Create tasks from email"
+    category: multi_step
+    goal: "Go through my urgent emails and create tasks for any action items."
+    initial_state:
+      urgent_emails: 5
+    expected_actions:
+      - triage_inbox
+      - get_email
+      - create_task
+      - archive_emails
+    max_steps: 8
+    success_criteria: "Action items extracted, tasks created with due dates"
+
+  # --- Task Management ---
+  - id: pa-h-03
+    name: "Create daily plan"
+    category: happy_path
+    goal: "Show me my tasks and calendar for today. Create a prioritized plan."
+    initial_state:
+      day: "today"
+    expected_actions:
+      - get_tasks
+      - get_agenda
+      - draft_summary
+    max_steps: 4
+    success_criteria: "Daily plan generated with time blocks and priorities"
+
+  - id: pa-h-13
+    name: "Delegate tasks"
+    category: multi_step
+    goal: "These 3 tasks should go to the team. Create clear task descriptions and send them."
+    initial_state:
+      tasks:
+        - "Update documentation"
+        - "Fix CSS on landing page"
+        - "Review PR #234"
+    expected_actions:
+      - create_task
+      - send_slack
+    max_steps: 6
+    success_criteria: "Tasks created with clear descriptions, team notified"
+
+  # --- Research ---
+  - id: pa-h-05
+    name: "Research a topic"
+    category: multi_step
+    goal: "Research the latest developments in AI agent frameworks. Give me a summary."
+    initial_state:
+      topic: "AI agent frameworks 2026"
+    expected_actions:
+      - web_search
+      - summarize_url
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Summary created with key frameworks, trends, and sources"
+
+  - id: pa-h-09
+    name: "Find and summarize meeting notes"
+    category: happy_path
+    goal: "Find my notes from the Q2 planning meeting and summarize the key decisions."
+    initial_state:
+      topic: "Q2 planning meeting"
+    expected_actions:
+      - search_notes
+      - get_note
+      - draft_summary
+    max_steps: 4
+    success_criteria: "Meeting notes found, key decisions summarized"
+
+  - id: pa-h-14
+    name: "Cross-source search"
+    category: multi_step
+    goal: "Find everything related to 'Project Atlas' across my notes, email, and calendar."
+    initial_state:
+      topic: "Project Atlas"
+    expected_actions:
+      - search_notes
+      - search_emails
+      - get_agenda
+      - draft_summary
+    max_steps: 6
+    success_criteria: "All related items found across sources, compiled summary"
+
+  # --- Briefings ---
+  - id: pa-h-07
+    name: "Daily briefing"
+    category: happy_path
+    goal: "Give me my morning briefing."
+    initial_state:
+      time: "8:00 AM Monday"
+    expected_actions:
+      - get_agenda
+      - triage_inbox
+      - get_tasks
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Comprehensive briefing: calendar, urgent emails, priority tasks"
+
+  - id: pa-h-10
+    name: "Meeting prep"
+    category: multi_step
+    goal: "Prepare me for my 2pm meeting with the product team."
+    initial_state:
+      meeting: "Product team sync, 2pm"
+      attendees: ["PM lead", "Design lead", "Eng lead"]
+    expected_actions:
+      - get_agenda
+      - search_notes
+      - search_emails
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Prep doc with agenda, relevant context, and talking points"
+
+  - id: pa-h-15
+    name: "End-of-week review"
+    category: multi_step
+    goal: "What did I accomplish this week? What carries over to next week?"
+    initial_state:
+      day: "Friday 5pm"
+    expected_actions:
+      - get_tasks
+      - get_agenda
+      - search_notes
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Weekly review with accomplishments, incomplete items, and Monday priorities"
+
+  # --- Edge Cases ---
+  - id: pa-h-12
+    name: "Weekend planning"
+    category: edge_case
+    goal: "Plan my weekend — personal errands plus prep for Monday."
+    initial_state:
+      day: "Friday evening"
+      personal_tasks: ["Groceries", "Gym", "Call mom"]
+      monday_prep: "Board meeting Monday 9am"
+    expected_actions:
+      - get_tasks
+      - get_agenda
+      - create_task
+      - set_reminder
+      - draft_summary
+    max_steps: 6
+    success_criteria: "Weekend plan with personal and prep tasks, Monday reminders set"

@@ -1,0 +1,136 @@
+# Personal Productivity Agent — Tool Registry
+# 23 tools across 6 categories
+
+domain: personal_assistant
+
+tools:
+  # --- Calendar ---
+  - id: check_calendar
+    action_type: check_calendar
+    rich_description: "check_calendar (calendar). Check calendar availability for a date range. Returns free and busy slots with duration and buffer times. effects: returns available time slots"
+    requires_generation: false
+
+  - id: schedule_event
+    action_type: schedule_event
+    rich_description: "schedule_event (calendar). Create a calendar event with title, time, attendees, location, and agenda. Sends invitations to all attendees. effects: event created, invitations sent"
+    requires_generation: true
+    generation_template: "Title: {title}\nTime: {time}\nDuration: {duration}\nAttendees: {attendees}\nAgenda: {agenda}"
+
+  - id: get_agenda
+    action_type: get_agenda
+    rich_description: "get_agenda (calendar). Get the full agenda for today or a specific date — all events with times, attendees, and locations. effects: returns day's schedule"
+    requires_generation: false
+
+  - id: reschedule_event
+    action_type: reschedule_event
+    rich_description: "reschedule_event (calendar). Move an existing calendar event to a new time slot. Notifies all attendees of the change. effects: event moved, attendees notified"
+    requires_generation: false
+
+  - id: cancel_event
+    action_type: cancel_event
+    rich_description: "cancel_event (calendar). Cancel a calendar event and notify attendees. Optionally include a cancellation reason. effects: event cancelled, attendees notified"
+    requires_generation: false
+
+  # --- Email ---
+  - id: triage_inbox
+    action_type: triage_inbox
+    rich_description: "triage_inbox (email). Scan and categorize inbox emails by priority — urgent, action needed, FYI, archive. Returns categorized list with sender, subject, and recommended action. effects: returns prioritized email list"
+    requires_generation: false
+
+  - id: get_email
+    action_type: get_email
+    rich_description: "get_email (email). Get the full content of an email including attachments, thread history, and metadata. effects: returns complete email"
+    requires_generation: false
+
+  - id: draft_email
+    action_type: draft_email
+    rich_description: "draft_email (email). Draft an email based on context, purpose, and recipient. Matches tone to relationship — formal for external, casual for team. effects: draft created for review"
+    requires_generation: true
+    generation_template: "To: {recipient}\nSubject: {subject}\nContext: {context}\nPurpose: {purpose}\nTone: {tone}\nBody: {body}"
+
+  - id: send_email
+    action_type: send_email
+    rich_description: "send_email (email). Send an email to recipients. effects: email delivered"
+    requires_generation: false
+
+  - id: search_emails
+    action_type: search_emails
+    rich_description: "search_emails (email). Search emails by sender, subject, date range, or keyword. Returns matching emails with snippets. effects: returns matching email list"
+    requires_generation: false
+
+  - id: archive_emails
+    action_type: archive_emails
+    rich_description: "archive_emails (email). Archive processed emails that don't need action. Keeps inbox clean. effects: emails moved to archive"
+    requires_generation: false
+
+  # --- Tasks ---
+  - id: get_tasks
+    action_type: get_tasks
+    rich_description: "get_tasks (tasks). Get task list with priorities, due dates, project assignments, and completion status. Supports filtering by project, priority, or due date. effects: returns task list"
+    requires_generation: false
+
+  - id: create_task
+    action_type: create_task
+    rich_description: "create_task (tasks). Create a new task with title, description, priority (1-4), due date, and project assignment. effects: task created in task manager"
+    requires_generation: false
+
+  - id: complete_task
+    action_type: complete_task
+    rich_description: "complete_task (tasks). Mark a task as complete. Records completion time. effects: task marked done"
+    requires_generation: false
+
+  - id: update_task
+    action_type: update_task
+    rich_description: "update_task (tasks). Update task properties — priority, due date, description, project. effects: task updated"
+    requires_generation: false
+
+  - id: get_projects
+    action_type: get_projects
+    rich_description: "get_projects (tasks). Get list of projects with task counts, progress percentage, and next due items. effects: returns project overview"
+    requires_generation: false
+
+  # --- Notes & Knowledge ---
+  - id: search_notes
+    action_type: search_notes
+    rich_description: "search_notes (notes). Search notes and documents by topic, keyword, or date. Returns matching notes with titles and snippets. effects: returns matching notes"
+    requires_generation: false
+
+  - id: create_note
+    action_type: create_note
+    rich_description: "create_note (notes). Create a new note or document with title and content. Can be linked to a project or topic. effects: note created"
+    requires_generation: true
+    generation_template: "Title: {title}\nProject: {project}\nContent: {content}"
+
+  - id: get_note
+    action_type: get_note
+    rich_description: "get_note (notes). Get the full content of a note or document. effects: returns note content"
+    requires_generation: false
+
+  # --- Research ---
+  - id: web_search
+    action_type: web_search
+    rich_description: "web_search (research). Search the web for current information on a topic. Returns relevant results with titles, snippets, and URLs. effects: returns search results"
+    requires_generation: false
+
+  - id: summarize_url
+    action_type: summarize_url
+    rich_description: "summarize_url (research). Fetch a web page and generate a concise summary of its content. effects: returns page summary with key points"
+    requires_generation: false
+
+  # --- Reminders & Communication ---
+  - id: set_reminder
+    action_type: set_reminder
+    rich_description: "set_reminder (reminders). Set a reminder for a specific date and time with a message. effects: reminder created, will notify at specified time"
+    requires_generation: false
+
+  - id: draft_summary
+    action_type: draft_summary
+    rich_description: "draft_summary (communication). Generate a structured summary from gathered context — daily briefing, meeting prep, research findings, or weekly review. effects: summary text generated"
+    requires_generation: true
+    generation_template: "Type: {summary_type}\nContext: {context}\nFormat: {format}\nAudience: {audience}"
+
+  - id: send_slack
+    action_type: send_slack
+    rich_description: "send_slack (communication). Post a message to a Slack channel or DM. effects: message posted"
+    requires_generation: true
+    generation_template: "Channel: {channel}\nMessage: {message}"

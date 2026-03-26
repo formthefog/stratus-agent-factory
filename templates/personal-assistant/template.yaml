@@ -1,0 +1,4 @@
+name: Personal Assistant
+domain: personal_assistant
+description: Agent for managing tasks, scheduling, email triage, reminders, and daily organization
+training_domains: [personal_assistant, email_management, scheduling, task_management]
