@@ -1,0 +1,56 @@
+{
+  "description": "IBrain contract test fixtures — v2-portable (same inputs/outputs for pytest)",
+  "encoding_roundtrip": [
+    {
+      "name": "simple_state_encoding",
+      "state_text": "[GOAL] Schedule a meeting with Sarah\n[LAST_ACTION] check_calendar\n[LAST_RESULT] Calendar loaded, 3pm-4pm free\n[AVAILABLE_ACTIONS] schedule_event, send_email, check_calendar",
+      "expected_embedding_dim": 768,
+      "expected_nonzero": true
+    },
+    {
+      "name": "empty_state_encoding",
+      "state_text": "[GOAL] \n[LAST_ACTION] none\n[LAST_RESULT] \n[AVAILABLE_ACTIONS] ",
+      "expected_embedding_dim": 768,
+      "expected_nonzero": true
+    },
+    {
+      "name": "long_state_encoding",
+      "state_text": "[GOAL] Investigate and resolve the production outage affecting the payment service\n[LAST_ACTION] check_logs\n[LAST_RESULT] Found 2847 error entries in the last 5 minutes. Primary error: ConnectionRefusedError on port 5432. Secondary: TimeoutError on Redis connection pool. The database connection pool appears exhausted.\n[AVAILABLE_ACTIONS] restart_service, rollback_deployment, scale_service, check_metrics, notify_team, run_healthcheck\n[KNOWLEDGE] Previous incident on 2026-01-15 was caused by a similar connection pool exhaustion after a deployment that changed the max_connections parameter.",
+      "expected_embedding_dim": 768,
+      "expected_nonzero": true
+    }
+  ],
+  "action_ranking": [
+    {
+      "name": "clear_best_action",
+      "state_text": "[GOAL] Check deployment status\n[AVAILABLE_ACTIONS] check_deployment_status, send_email, create_ticket",
+      "goal_text": "Check deployment status",
+      "tools": [
+        {"id": "check_deployment_status", "rich_description": "check_deployment_status (devops). Checks the current deployment status and health of a service. effects: returns deployment status with version, health, and rollback availability"},
+        {"id": "send_email", "rich_description": "send_email (communication). Sends an email to specified recipients. effects: email delivered to recipients"},
+        {"id": "create_ticket", "rich_description": "create_ticket (tracking). Creates a support ticket. effects: ticket created with unique ID"}
+      ],
+      "expected_top1": "check_deployment_status"
+    },
+    {
+      "name": "ambiguous_actions",
+      "state_text": "[GOAL] Fix the broken dashboard\n[LAST_ACTION] check_known_issues\n[LAST_RESULT] Known issue KI-2847: Dashboard loading slowly due to database index missing\n[AVAILABLE_ACTIONS] apply_fix, search_knowledge_base, escalate",
+      "goal_text": "Fix the broken dashboard",
+      "tools": [
+        {"id": "apply_fix", "rich_description": "apply_fix (support). Applies a known fix to the customer's account. effects: fix applied, issue should be resolved"},
+        {"id": "search_knowledge_base", "rich_description": "search_knowledge_base (support). Searches help center for relevant articles. effects: returns matching articles"},
+        {"id": "escalate", "rich_description": "escalate (support). Escalates ticket to specialized team. effects: ticket reassigned with full context"}
+      ],
+      "expected_top1": "apply_fix",
+      "note": "Known issue found with fix available — apply_fix is the right next step"
+    }
+  ],
+  "determinism": [
+    {
+      "name": "same_input_same_output",
+      "state_text": "[GOAL] Schedule meeting\n[AVAILABLE_ACTIONS] check_calendar, schedule_event",
+      "runs": 3,
+      "expected": "All runs produce identical rankings"
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+{
+  "description": "Standard benchmark suite — 20 scenarios across 4 domains. v2-portable.",
+  "scenarios": [
+    {
+      "id": "devops-01",
+      "domain": "devops",
+      "name": "Check deployment status",
+      "goal": "Check the deployment status of the payment service",
+      "tools": [
+        {"id": "check_deployment_status", "rich_description": "check_deployment_status (devops). Check deployment status and health. effects: returns status, version, health"},
+        {"id": "check_logs", "rich_description": "check_logs (devops). Query service logs. effects: returns recent log entries"},
+        {"id": "check_metrics", "rich_description": "check_metrics (devops). Query service metrics dashboard. effects: returns latency, error rate, throughput"},
+        {"id": "restart_service", "rich_description": "restart_service (devops). Restart a running service. effects: service restarted"},
+        {"id": "notify_team", "rich_description": "notify_team (devops). Send notification to team channel. effects: message posted"}
+      ],
+      "expected_first_action": "check_deployment_status",
+      "max_steps": 3,
+      "expected_outcome": "deployment status retrieved"
+    },
+    {
+      "id": "devops-02",
+      "domain": "devops",
+      "name": "Investigate high error rate",
+      "goal": "Investigate why the API error rate spiked to 15% in the last 10 minutes",
+      "tools": [
+        {"id": "check_metrics", "rich_description": "check_metrics (devops). Query metrics. effects: returns latency, error rate, throughput"},
+        {"id": "check_logs", "rich_description": "check_logs (devops). Query logs with filters. effects: returns matching log entries"},
+        {"id": "check_deployment_status", "rich_description": "check_deployment_status (devops). Check deployment. effects: returns status, version"},
+        {"id": "rollback_deployment", "rich_description": "rollback_deployment (devops). Rollback to previous version. effects: previous version restored"},
+        {"id": "notify_team", "rich_description": "notify_team (devops). Notify team. effects: message posted"}
+      ],
+      "expected_first_action": "check_logs",
+      "max_steps": 5,
+      "expected_outcome": "root cause identified"
+    },
+    {
+      "id": "devops-03",
+      "domain": "devops",
+      "name": "Scale service for traffic spike",
+      "goal": "Scale the web frontend to handle a 3x traffic spike starting in 1 hour",
+      "tools": [
+        {"id": "check_metrics", "rich_description": "check_metrics (devops). Check current metrics. effects: returns resource usage"},
+        {"id": "scale_service", "rich_description": "scale_service (devops). Scale service replicas. effects: replica count adjusted"},
+        {"id": "check_deployment_status", "rich_description": "check_deployment_status (devops). Check status. effects: returns status"},
+        {"id": "update_autoscaling", "rich_description": "update_autoscaling (devops). Configure autoscaling rules. effects: autoscaling updated"},
+        {"id": "notify_team", "rich_description": "notify_team (devops). Notify team. effects: message posted"}
+      ],
+      "expected_first_action": "check_metrics",
+      "max_steps": 4,
+      "expected_outcome": "service scaled"
+    },
+    {
+      "id": "devops-04",
+      "domain": "devops",
+      "name": "Rollback failed deployment",
+      "goal": "The latest deployment broke checkout. Roll back to the previous version immediately.",
+      "tools": [
+        {"id": "check_deployment_status", "rich_description": "check_deployment_status (devops). Check deployment. effects: returns version, status"},
+        {"id": "rollback_deployment", "rich_description": "rollback_deployment (devops). Rollback deployment. effects: previous version restored"},
+        {"id": "check_logs", "rich_description": "check_logs (devops). Query logs. effects: returns log entries"},
+        {"id": "run_healthcheck", "rich_description": "run_healthcheck (devops). Run health checks. effects: returns health status"},
+        {"id": "notify_team", "rich_description": "notify_team (devops). Notify team. effects: notification sent"}
+      ],
+      "expected_first_action": "rollback_deployment",
+      "max_steps": 4,
+      "expected_outcome": "deployment rolled back"
+    },
+    {
+      "id": "devops-05",
+      "domain": "devops",
+      "name": "Database connection pool exhausted",
+      "goal": "Database connections are exhausted. Diagnose and fix.",
+      "tools": [
+        {"id": "check_metrics", "rich_description": "check_metrics (devops). Check database metrics. effects: returns connection counts, query times"},
+        {"id": "check_logs", "rich_description": "check_logs (devops). Query database and app logs. effects: returns error entries"},
+        {"id": "restart_service", "rich_description": "restart_service (devops). Restart service to reset connections. effects: service restarted, connections reset"},
+        {"id": "update_config", "rich_description": "update_config (devops). Update service configuration. effects: config updated, may require restart"},
+        {"id": "notify_team", "rich_description": "notify_team (devops). Notify team. effects: message posted"}
+      ],
+      "expected_first_action": "check_metrics",
+      "max_steps": 5,
+      "expected_outcome": "connections restored"
+    },
+    {
+      "id": "sales-01",
+      "domain": "sales",
+      "name": "Prepare for sales call",
+      "goal": "Prepare a briefing for the upcoming call with Acme Corp",
+      "tools": [
+        {"id": "get_contact", "rich_description": "get_contact (crm). Get contact details and history. effects: returns contact record"},
+        {"id": "get_deal", "rich_description": "get_deal (crm). Get deal details and stage. effects: returns deal info"},
+        {"id": "search_emails", "rich_description": "search_emails (communication). Search email history. effects: returns matching emails"},
+        {"id": "get_notes", "rich_description": "get_notes (crm). Get notes for a contact. effects: returns notes"},
+        {"id": "draft_summary", "rich_description": "draft_summary (assistant). Create a structured summary. effects: summary generated"}
+      ],
+      "expected_first_action": "get_contact",
+      "max_steps": 5,
+      "expected_outcome": "briefing prepared"
+    },
+    {
+      "id": "sales-02",
+      "domain": "sales",
+      "name": "Update deal stage after meeting",
+      "goal": "Update the Acme Corp deal to Proposal stage and log the meeting notes",
+      "tools": [
+        {"id": "get_deal", "rich_description": "get_deal (crm). Get current deal info. effects: returns deal record"},
+        {"id": "update_deal", "rich_description": "update_deal (crm). Update deal fields. effects: deal updated"},
+        {"id": "add_note", "rich_description": "add_note (crm). Add note to contact or deal. effects: note saved"},
+        {"id": "create_task", "rich_description": "create_task (crm). Create follow-up task. effects: task created"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"}
+      ],
+      "expected_first_action": "update_deal",
+      "max_steps": 4,
+      "expected_outcome": "deal updated and notes logged"
+    },
+    {
+      "id": "sales-03",
+      "domain": "sales",
+      "name": "Find stale deals",
+      "goal": "Find all deals with no activity in the last 14 days and draft follow-up emails",
+      "tools": [
+        {"id": "search_deals", "rich_description": "search_deals (crm). Search deals with filters. effects: returns matching deals"},
+        {"id": "get_deal", "rich_description": "get_deal (crm). Get deal details. effects: returns deal record"},
+        {"id": "get_contact", "rich_description": "get_contact (crm). Get contact info. effects: returns contact"},
+        {"id": "draft_email", "rich_description": "draft_email (communication). Draft an email. effects: draft created"},
+        {"id": "add_note", "rich_description": "add_note (crm). Add note. effects: note saved"}
+      ],
+      "expected_first_action": "search_deals",
+      "max_steps": 6,
+      "expected_outcome": "stale deals identified and follow-ups drafted"
+    },
+    {
+      "id": "sales-04",
+      "domain": "sales",
+      "name": "Qualify inbound lead",
+      "goal": "Research the new inbound lead from TechStart Inc and determine if they're qualified",
+      "tools": [
+        {"id": "get_contact", "rich_description": "get_contact (crm). Get contact details. effects: returns contact record"},
+        {"id": "search_company", "rich_description": "search_company (research). Research company info. effects: returns company profile"},
+        {"id": "get_notes", "rich_description": "get_notes (crm). Get notes. effects: returns notes"},
+        {"id": "update_contact", "rich_description": "update_contact (crm). Update contact fields. effects: contact updated"},
+        {"id": "create_task", "rich_description": "create_task (crm). Create follow-up task. effects: task created"}
+      ],
+      "expected_first_action": "get_contact",
+      "max_steps": 5,
+      "expected_outcome": "lead qualified or disqualified"
+    },
+    {
+      "id": "sales-05",
+      "domain": "sales",
+      "name": "Generate pipeline report",
+      "goal": "Generate a summary of the current sales pipeline grouped by stage",
+      "tools": [
+        {"id": "search_deals", "rich_description": "search_deals (crm). Search all deals. effects: returns deals list"},
+        {"id": "get_deal", "rich_description": "get_deal (crm). Get deal details. effects: returns deal"},
+        {"id": "draft_summary", "rich_description": "draft_summary (assistant). Create summary. effects: summary generated"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"},
+        {"id": "get_metrics", "rich_description": "get_metrics (analytics). Get sales metrics. effects: returns pipeline metrics"}
+      ],
+      "expected_first_action": "search_deals",
+      "max_steps": 4,
+      "expected_outcome": "pipeline report generated"
+    },
+    {
+      "id": "support-01",
+      "domain": "support",
+      "name": "Look up customer issue",
+      "goal": "Customer reports they can't log in. Check their account status.",
+      "tools": [
+        {"id": "get_customer", "rich_description": "get_customer (support). Look up customer account. effects: returns account details and status"},
+        {"id": "check_auth_logs", "rich_description": "check_auth_logs (support). Check authentication logs. effects: returns login attempts"},
+        {"id": "reset_password", "rich_description": "reset_password (support). Reset customer password. effects: password reset email sent"},
+        {"id": "search_known_issues", "rich_description": "search_known_issues (support). Search known issues database. effects: returns matching issues"},
+        {"id": "create_ticket", "rich_description": "create_ticket (support). Create support ticket. effects: ticket created"}
+      ],
+      "expected_first_action": "get_customer",
+      "max_steps": 4,
+      "expected_outcome": "issue diagnosed"
+    },
+    {
+      "id": "support-02",
+      "domain": "support",
+      "name": "Apply known fix",
+      "goal": "Customer's dashboard is loading slowly. A known fix exists (KI-2847).",
+      "tools": [
+        {"id": "search_known_issues", "rich_description": "search_known_issues (support). Search known issues. effects: returns matching issues with fixes"},
+        {"id": "apply_fix", "rich_description": "apply_fix (support). Apply a known fix. effects: fix applied to account"},
+        {"id": "get_customer", "rich_description": "get_customer (support). Look up customer. effects: returns account details"},
+        {"id": "create_ticket", "rich_description": "create_ticket (support). Create ticket. effects: ticket created"},
+        {"id": "escalate", "rich_description": "escalate (support). Escalate to specialist. effects: ticket escalated"}
+      ],
+      "expected_first_action": "search_known_issues",
+      "max_steps": 4,
+      "expected_outcome": "fix applied"
+    },
+    {
+      "id": "support-03",
+      "domain": "support",
+      "name": "Escalate complex issue",
+      "goal": "Customer reports intermittent data loss. No known fix exists. Escalate with full context.",
+      "tools": [
+        {"id": "get_customer", "rich_description": "get_customer (support). Look up customer. effects: returns account details"},
+        {"id": "check_logs", "rich_description": "check_logs (support). Check service logs for customer. effects: returns relevant logs"},
+        {"id": "search_known_issues", "rich_description": "search_known_issues (support). Search known issues. effects: returns matching issues"},
+        {"id": "create_ticket", "rich_description": "create_ticket (support). Create detailed ticket. effects: ticket created"},
+        {"id": "escalate", "rich_description": "escalate (support). Escalate with context. effects: ticket assigned to specialist"}
+      ],
+      "expected_first_action": "get_customer",
+      "max_steps": 5,
+      "expected_outcome": "escalated with full context"
+    },
+    {
+      "id": "support-04",
+      "domain": "support",
+      "name": "Billing inquiry",
+      "goal": "Customer asks why they were charged $99 instead of $49",
+      "tools": [
+        {"id": "get_customer", "rich_description": "get_customer (support). Look up customer account. effects: returns account and plan details"},
+        {"id": "get_billing_history", "rich_description": "get_billing_history (billing). Get billing history. effects: returns charges and invoices"},
+        {"id": "get_plan_details", "rich_description": "get_plan_details (billing). Get plan pricing. effects: returns plan details"},
+        {"id": "apply_credit", "rich_description": "apply_credit (billing). Apply account credit. effects: credit applied"},
+        {"id": "create_ticket", "rich_description": "create_ticket (support). Create ticket. effects: ticket created"}
+      ],
+      "expected_first_action": "get_customer",
+      "max_steps": 4,
+      "expected_outcome": "billing discrepancy explained"
+    },
+    {
+      "id": "support-05",
+      "domain": "support",
+      "name": "Feature request handling",
+      "goal": "Customer requests a feature (export to PDF). Log it properly.",
+      "tools": [
+        {"id": "search_feature_requests", "rich_description": "search_feature_requests (product). Search existing feature requests. effects: returns matching requests"},
+        {"id": "create_feature_request", "rich_description": "create_feature_request (product). Create feature request. effects: request logged with votes"},
+        {"id": "get_customer", "rich_description": "get_customer (support). Look up customer. effects: returns account details"},
+        {"id": "add_note", "rich_description": "add_note (support). Add note to customer record. effects: note saved"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"}
+      ],
+      "expected_first_action": "search_feature_requests",
+      "max_steps": 4,
+      "expected_outcome": "feature request logged"
+    },
+    {
+      "id": "pa-01",
+      "domain": "personal_assistant",
+      "name": "Schedule a meeting",
+      "goal": "Schedule a 1-hour meeting with Sarah tomorrow afternoon",
+      "tools": [
+        {"id": "check_calendar", "rich_description": "check_calendar (assistant). Check calendar availability. effects: returns free slots"},
+        {"id": "schedule_event", "rich_description": "schedule_event (assistant). Create calendar event. effects: event created"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"},
+        {"id": "get_contacts", "rich_description": "get_contacts (assistant). Look up contact info. effects: returns contact details"},
+        {"id": "set_reminder", "rich_description": "set_reminder (assistant). Set a reminder. effects: reminder created"}
+      ],
+      "expected_first_action": "check_calendar",
+      "max_steps": 4,
+      "expected_outcome": "meeting scheduled"
+    },
+    {
+      "id": "pa-02",
+      "domain": "personal_assistant",
+      "name": "Email triage",
+      "goal": "Triage my inbox and summarize the 5 most important emails",
+      "tools": [
+        {"id": "triage_inbox", "rich_description": "triage_inbox (assistant). Scan and categorize inbox. effects: returns categorized emails"},
+        {"id": "get_email", "rich_description": "get_email (communication). Get email details. effects: returns full email"},
+        {"id": "draft_summary", "rich_description": "draft_summary (assistant). Create summary. effects: summary generated"},
+        {"id": "create_task", "rich_description": "create_task (assistant). Create task from email. effects: task created"},
+        {"id": "set_reminder", "rich_description": "set_reminder (assistant). Set reminder. effects: reminder created"}
+      ],
+      "expected_first_action": "triage_inbox",
+      "max_steps": 4,
+      "expected_outcome": "inbox triaged and summarized"
+    },
+    {
+      "id": "pa-03",
+      "domain": "personal_assistant",
+      "name": "Task management",
+      "goal": "Show me my tasks for today and create a prioritized plan",
+      "tools": [
+        {"id": "get_tasks", "rich_description": "get_tasks (assistant). Get tasks list. effects: returns tasks with priorities"},
+        {"id": "check_calendar", "rich_description": "check_calendar (assistant). Check calendar. effects: returns scheduled events"},
+        {"id": "draft_summary", "rich_description": "draft_summary (assistant). Create summary. effects: summary generated"},
+        {"id": "create_task", "rich_description": "create_task (assistant). Create new task. effects: task created"},
+        {"id": "set_reminder", "rich_description": "set_reminder (assistant). Set reminder. effects: reminder created"}
+      ],
+      "expected_first_action": "get_tasks",
+      "max_steps": 4,
+      "expected_outcome": "daily plan created"
+    },
+    {
+      "id": "pa-04",
+      "domain": "personal_assistant",
+      "name": "Draft and send email",
+      "goal": "Draft a follow-up email to John about the project deadline and send it",
+      "tools": [
+        {"id": "get_contacts", "rich_description": "get_contacts (assistant). Look up contact. effects: returns contact info"},
+        {"id": "search_notes", "rich_description": "search_notes (assistant). Search notes. effects: returns matching notes"},
+        {"id": "draft_email", "rich_description": "draft_email (communication). Draft email. effects: draft created for review"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"},
+        {"id": "add_note", "rich_description": "add_note (assistant). Add note. effects: note saved"}
+      ],
+      "expected_first_action": "get_contacts",
+      "max_steps": 5,
+      "expected_outcome": "email sent"
+    },
+    {
+      "id": "pa-05",
+      "domain": "personal_assistant",
+      "name": "Research and summarize",
+      "goal": "Find all notes about the Q2 budget meeting and create a summary",
+      "tools": [
+        {"id": "search_notes", "rich_description": "search_notes (assistant). Search notes by topic. effects: returns matching notes"},
+        {"id": "get_tasks", "rich_description": "get_tasks (assistant). Get related tasks. effects: returns tasks"},
+        {"id": "draft_summary", "rich_description": "draft_summary (assistant). Create summary. effects: summary generated"},
+        {"id": "check_calendar", "rich_description": "check_calendar (assistant). Check for related events. effects: returns events"},
+        {"id": "send_email", "rich_description": "send_email (communication). Send email. effects: email delivered"}
+      ],
+      "expected_first_action": "search_notes",
+      "max_steps": 4,
+      "expected_outcome": "summary created"
+    }
+  ],
+  "grading": {
+    "completion": "Goal achieved within max_steps (binary)",
+    "efficiency": "steps_taken / max_steps (lower is better)",
+    "first_action_accuracy": "Did first action match expected_first_action",
+    "cost": "Total LLM calls made during execution",
+    "latency": "Total wall-clock time for all steps"
+  }
+}
