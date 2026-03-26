@@ -1,4 +1,8 @@
 export type { MessagingToolSend } from "./pi-embedded-messaging.js";
+
+// Brain interface and registry (Stratus Agent Factory)
+export type { IBrain, BrainConfig, BrainResponse, BrainState } from "../brain/index.js";
+export { createBrain, registerBrain, hasBrain } from "../brain/index.js";
 export { compactEmbeddedPiSession } from "./pi-embedded-runner/compact.js";
 export {
   applyExtraParamsToAgent,

@@ -90,6 +90,7 @@ import {
   type UsageAccumulator,
 } from "./usage-accumulator.js";
 import { describeUnknownError } from "./utils.js";
+import { runWithBrain, type BrainRunResult } from "../../brain/integration.js";
 
 type ApiKeyInfo = ResolvedProviderAuth;
 
@@ -210,9 +211,74 @@ function buildErrorAgentMeta(params: {
   };
 }
 
+/**
+ * Try to route the agent run through a non-ReAct brain (e.g., Stratus).
+ * Returns an EmbeddedPiRunResult if a brain handled the turn, or null
+ * to fall through to the standard ReAct path.
+ *
+ * This function checks the agent's config for a `brain` section and routes
+ * accordingly. For standard OpenClaw agents (no brain config), this is a no-op.
+ */
+async function tryBrainRoute(
+  params: RunEmbeddedPiAgentParams,
+): Promise<EmbeddedPiRunResult | null> {
+  try {
+    const brainResult = await runWithBrain({
+      sessionId: params.sessionId,
+      prompt: params.prompt,
+      provider: params.provider ?? DEFAULT_PROVIDER,
+      model: params.model ?? DEFAULT_MODEL,
+      sessionFile: params.sessionFile,
+      workspaceDir: params.workspaceDir,
+      images: params.images?.map((img) => ({
+        data: typeof img === "string" ? img : "",
+        media_type: "image/png",
+      })),
+      abortSignal: params.abortSignal,
+      config: params.config as Record<string, unknown> | undefined,
+      onPartialReply: params.onPartialReply
+        ? (payload) => params.onPartialReply!(payload as never)
+        : undefined,
+      onToolResult: params.onToolResult
+        ? (payload) => params.onToolResult!(payload as never)
+        : undefined,
+      onBlockReply: params.onBlockReply
+        ? (payload) => params.onBlockReply!(payload as never)
+        : undefined,
+    });
+
+    if (!brainResult) return null;
+
+    // Translate BrainRunResult → EmbeddedPiRunResult
+    return {
+      payloads: brainResult.payloads,
+      meta: {
+        durationMs: brainResult.meta.durationMs,
+        agentMeta: brainResult.meta.agentMeta as EmbeddedPiAgentMeta | undefined,
+        stopReason: brainResult.meta.stopReason,
+        error: brainResult.meta.error
+          ? { kind: brainResult.meta.error.kind as never, message: brainResult.meta.error.message }
+          : undefined,
+      },
+    } as EmbeddedPiRunResult;
+  } catch (err) {
+    // Brain routing failed — log and fall through to standard runner
+    log.warn(`[brain-route] Brain routing failed, falling back to ReAct: ${err}`);
+    return null;
+  }
+}
+
 export async function runEmbeddedPiAgent(
   params: RunEmbeddedPiAgentParams,
 ): Promise<EmbeddedPiRunResult> {
+  // --- Brain-aware routing (Stratus Agent Factory) ---
+  // If the agent config specifies a non-ReAct brain, route through the brain
+  // integration layer instead of the standard ReAct loop below.
+  // This is a no-op for standard OpenClaw agents (no brain config = ReAct).
+  const brainResult = await tryBrainRoute(params);
+  if (brainResult) return brainResult;
+  // --- End brain-aware routing ---
+
   const sessionLane = resolveSessionLane(params.sessionKey?.trim() || params.sessionId);
   const globalLane = resolveGlobalLane(params.lane);
   const enqueueGlobal =

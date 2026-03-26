@@ -15,6 +15,92 @@ plan instead of guess, verify instead of hope, and recover instead of retry.
 
 ---
 
+## Language Strategy: v1 (TypeScript) → v2 (Python-native)
+
+### The Tradeoff
+
+| | v1: OpenClaw Fork (TypeScript) | v2: Python-native Rewrite |
+|--|-------------------------------|--------------------------|
+| **Language** | TypeScript (OpenClaw codebase) | Python |
+| **Stratus integration** | HTTP sidecar (TS↔Python bridge) | In-process, zero bridge |
+| **Time to ship** | 4-6 weeks | 3-4 months |
+| **Bridge overhead** | ~5-10ms per Stratus call | 0ms |
+| **Ecosystem** | 5,700+ OpenClaw skills, 50+ channels | Must rebuild or wrap |
+| **Memory footprint** | Node.js + Python sidecar (~800MB) | Single Python process (~400MB) |
+| **Codebase size** | ~50k LOC (inherited) + ~5k new | ~15k LOC (purpose-built) |
+
+### Why v1 First (Ship Fast)
+
+OpenClaw gives us battle-tested infrastructure for free: channels (Slack, Discord, WhatsApp, etc.),
+skill marketplace, scheduling, memory, WebSocket gateway. Building these from scratch is months
+of work that adds zero differentiation. The sidecar bridge tax (~5-10ms per call) is negligible
+compared to tool execution latency (~100-5000ms).
+
+**v1 proves the thesis:** Stratus Brain + any harness = better agents. The harness choice is
+secondary to proving the brain works.
+
+### Why v2 Eventually (Clean Architecture)
+
+Once Stratus Brain is validated in production:
+- **Zero bridge overhead** — Stratus runs in-process, no serialization/HTTP round-trips
+- **Single runtime** — One Python process, simpler deployment, lower memory
+- **Native Stratus types** — No TypeScript↔Python type mapping, direct tensor access
+- **Cleaner codebase** — Purpose-built for world model agents, not adapted from LLM agent framework
+- **Python ecosystem** — Direct access to PyTorch, HuggingFace, scientific computing stack
+
+### Design Constraints for Clean Migration
+
+**These constraints apply to ALL v1 code. They ensure v2 migration is a rewrite, not an untangling.**
+
+1. **IBrain interface is the ONLY contract between harness and brain.** No harness code may
+   import from `src/brain/stratus/` internals. All communication goes through `IBrain.processTurn()`,
+   `IBrain.getState()`, `IBrain.reset()`, `IBrain.configure()`.
+
+2. **StratusClient (RPC) is the ONLY Stratus touchpoint.** The TypeScript brain calls Stratus
+   exclusively through `StratusClient`. No direct HTTP calls to the sidecar from anywhere else.
+   In v2, `StratusClient` becomes direct Python function calls — one file to rewrite.
+
+3. **Tool Registry is serializable.** `ToolRegistryEntry` must be JSON-serializable. No runtime
+   objects, no closures, no TypeScript-specific types. In v2, the same JSON feeds the Python tool
+   registry directly.
+
+4. **Agent Package format is language-agnostic.** Agent configs, tool definitions, probe configs,
+   and test scenarios are all YAML/JSON. No TypeScript in the package format. v2 loads the same
+   packages without conversion.
+
+5. **Sidecar RPC protocol is the v2 internal API.** The HTTP endpoints (`/encode_state`,
+   `/probe_rank`, `/tree_search`, etc.) map 1:1 to Python functions. In v2, these become
+   direct function calls with the same signatures.
+
+6. **Tests are behavior tests, not implementation tests.** Test against IBrain interface and
+   agent outcomes, not internal StratusBrain methods. v2 must pass the same test suite
+   (rewritten in pytest but same assertions).
+
+7. **No TypeScript-specific patterns in core logic.** Avoid decorators, complex generics,
+   or TS-specific metaprogramming in brain/tool/agent code. Keep logic procedural and
+   translatable.
+
+### v2 Migration Scope
+
+When v2 begins, the migration is:
+
+| Component | v1 → v2 |
+|-----------|---------|
+| Gateway | OpenClaw TypeScript → Python (FastAPI/WebSocket) or wrap existing |
+| Brain | `StratusBrain.ts` → `stratus_brain.py` (direct Stratus calls) |
+| Sidecar | Eliminated — Stratus runs in-process |
+| Tool Registry | Same JSON format, Python loader |
+| Agent Packages | Unchanged — YAML/JSON, language-agnostic |
+| Skills/Tools | TypeScript tool executors → Python tool executors |
+| Memory | SQLite + markdown (same), Python interface |
+| CLI | TypeScript CLI → Python CLI (click/typer) |
+| Tests | Vitest → pytest (same behavioral assertions) |
+
+**The brain migrates trivially** (StratusClient calls become function calls). **The harness is
+the real work** — but by then we'll know exactly what we need, because v1 taught us.
+
+---
+
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
@@ -197,6 +283,9 @@ Stratus Brain injection. Keep everything else intact.
   - `goal_proximity: number`
   - `steps_taken: number`
 - **Output:** `src/brain/IBrain.ts` with full type definitions
+- **v2 migration note:** This interface becomes a Python ABC. Same method signatures,
+  same response types (as dataclasses). Design the interface to be language-agnostic —
+  no TypeScript-specific types in the contract.
 
 #### A.2.3 Create Brain adapter for existing ReAct
 - Wrap OpenClaw's existing ReAct Brain behind `IBrain` interface
@@ -245,6 +334,10 @@ Stratus Brain injection. Keep everything else intact.
   }
   ```
 - **Output:** `src/tools/ToolRegistryEntry.ts`
+- **v2 migration constraint:** This schema MUST be JSON-serializable. Use plain types
+  only (string, number, boolean, arrays, objects). The `embedding` field is stored as
+  `number[]` in JSON, loaded as `Float32Array` at runtime. In v2, the same JSON schema
+  feeds a Python `@dataclass` with identical field names.
 
 #### A.3.3 Build skill-to-tool converter
 - Reads OpenClaw skill manifests
@@ -404,6 +497,10 @@ We need a bridge.
 - Embedding caching (tool embeddings don't change within session)
 - Batch support (encode multiple items in one call)
 - **Output:** `src/brain/stratus/StratusClient.ts`
+- **v2 migration note:** This is the single file that bridges TS↔Python. In v2, each
+  method becomes a direct Python function call with identical signatures. Design methods
+  as thin wrappers: `encodeState(text) → embedding`, `probeRank(state, goal, tools) → ranked`,
+  etc. No business logic in the client — it's pure RPC.
 
 #### B.1.5 Build sidecar lifecycle manager
 - Auto-start sidecar when Stratus Brain initializes
@@ -859,6 +956,9 @@ deployment targets and multi-agent orchestration.
       tool_embeddings.bin   # cached action embeddings
   ```
 - **Output:** `src/packaging/AgentPackage.ts`
+- **v2 migration constraint:** This format is language-agnostic by design. ALL files are
+  YAML, JSON, Markdown, or binary (weights). No `.ts` files in the package. v2 loads
+  the exact same packages with a Python loader — zero conversion needed.
 
 #### D.1.2 Build agent packager
 - Takes agent config directory → validates → creates package
@@ -1123,6 +1223,9 @@ and comparative benchmarks.
 - State encoding round-trip tests
 - Action ranking determinism tests
 - **Output:** `tests/unit/brain/`
+- **v2 migration note:** Write tests as behavioral assertions against IBrain interface,
+  not StratusBrain internals. These same test cases (same inputs, same expected outputs)
+  must be translatable to pytest for v2. Keep test data in JSON fixtures, not inline TS.
 
 #### G.1.2 Tool registry tests
 - Skill-to-tool conversion accuracy
@@ -1431,6 +1534,9 @@ Everything else (templates, docs, tests, SDK, deployment) can be built in parall
 | 9 | Templates accelerate agent building | Pre-configured tool registries, test scenarios, and personas for common domains. Agent Builder starts from templates, not blank slate. | 2026-03-26 |
 | 10 | Training data format canonical, platform adapters for real-world | Model learns dynamics from canonical format. Real-world traces are preprocessed by platform-specific adapters (~10 covers 90% market). | 2026-03-26 |
 | 11 | Rich context excluded from pre-training, handled by probes | Prevents cos_consec collapse. Context-dependent preferences learned via post-training and per-customer probes. | 2026-03-26 |
+| 12 | v1 in TypeScript (OpenClaw fork), v2 in Python-native | Ship fast with battle-tested harness (v1). Rewrite when brain is validated and we know exactly what harness we need (v2). Bridge tax (~5-10ms) negligible vs tool execution latency. | 2026-03-26 |
+| 13 | Design constraints for clean v1→v2 migration | IBrain as only contract, StratusClient as only Stratus touchpoint, JSON-serializable tool registry, language-agnostic agent packages, behavioral tests. Ensures v2 is a rewrite, not an untangling. | 2026-03-26 |
+| 14 | Sidecar RPC = v2 internal API | HTTP endpoints map 1:1 to Python functions. In v2, StratusClient method calls become direct function calls with identical signatures. Zero design waste. | 2026-03-26 |
 
 ---
 
@@ -1449,6 +1555,9 @@ Everything else (templates, docs, tests, SDK, deployment) can be built in parall
 | **Agent Builder Agent** | The meta-agent that constructs and deploys other agents |
 | **Tool Registry** | Collection of tool definitions with rich descriptions and cached embeddings |
 | **Platform Adapter** | Preprocessor that converts real-world traces (LangSmith, OTEL) to canonical format |
+| **v1** | TypeScript implementation phase — OpenClaw fork with Stratus Brain via HTTP sidecar |
+| **v2** | Python-native implementation phase — single-process, zero-bridge, purpose-built harness |
+| **Bridge Tax** | The ~5-10ms latency overhead of TypeScript↔Python HTTP calls in v1 (eliminated in v2) |
 
 ---
 
