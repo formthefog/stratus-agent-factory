@@ -1,0 +1,43 @@
+# Stratus Agent — Base Dockerfile
+# Used as reference by DockerDeployer. Customize per agent via generation.
+#
+# Build: docker build -t stratus-agent-<name> -f docker/Dockerfile.agent .
+# Run (GPU): docker run --gpus all -p 18789:18789 -p 7900:7900 stratus-agent-<name>
+# Run (CPU): docker run -p 18789:18789 -p 7900:7900 stratus-agent-<name>
+
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenClaw
+RUN npm install -g openclaw@latest
+
+# Install Stratus sidecar (GPU variant)
+RUN pip3 install stratus-sidecar[gpu]
+
+# Working directory
+WORKDIR /app/agent
+
+# Copy agent package (build context should be the agent package directory)
+COPY . /app/agent/
+
+# Ports: Gateway + Sidecar
+ENV GATEWAY_PORT=18789
+ENV SIDECAR_PORT=7900
+ENV SIDECAR_URL=http://127.0.0.1:7900
+
+EXPOSE 18789 7900
+
+# Health check on sidecar
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:7900/health || exit 1
+
+# Start sidecar + gateway
+CMD ["bash", "-c", "stratus-sidecar --port ${SIDECAR_PORT} & sleep 5 && openclaw gateway run --bind 0.0.0.0 --port ${GATEWAY_PORT}"]

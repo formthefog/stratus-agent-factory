@@ -1,0 +1,51 @@
+# Stratus Agent — Fly.io Template
+# Used as reference by FlyDeployer. Customize per agent via generation.
+#
+# Deploy: fly deploy -a stratus-<agent-id>
+
+app = "stratus-AGENT_ID"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  GATEWAY_PORT = "18789"
+  SIDECAR_PORT = "7900"
+  SIDECAR_URL = "http://127.0.0.1:7900"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 18789
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 50
+    soft_limit = 25
+
+[[vm]]
+  size = "a100-40gb"
+  memory = "16gb"
+
+[mounts]
+  source = "agent_data"
+  destination = "/data"
+
+[checks]
+  [checks.sidecar]
+    port = 7900
+    type = "http"
+    interval = "15s"
+    timeout = "5s"
+    path = "/health"
+
+  [checks.gateway]
+    port = 18789
+    type = "http"
+    interval = "15s"
+    timeout = "5s"
+    path = "/health"
